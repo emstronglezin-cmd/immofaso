@@ -1,0 +1,219 @@
+// Prisma schema — IMMOFASO
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  OWNER
+  MANAGER
+  TENANT
+  GUEST
+}
+
+enum PropertyType {
+  APARTMENT
+  HOUSE
+  OFFICE
+  COMMERCIAL
+  LAND
+  OTHER
+}
+
+enum PropertyStatus {
+  AVAILABLE
+  RENTED
+  UNDER_MAINTENANCE
+  SOLD
+}
+
+enum ContractStatus {
+  ACTIVE
+  EXPIRED
+  TERMINATED
+  PENDING
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CASH
+  MOBILE_MONEY
+  BANK_TRANSFER
+  LICKPAY
+  OTHER
+}
+
+enum NotificationType {
+  INFO
+  PAYMENT
+  CONTRACT
+  PROPERTY
+  SYSTEM
+}
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  password  String
+  firstName String?
+  lastName  String?
+  phone     String?
+  role      Role      @default(TENANT)
+  isGuest   Boolean   @default(false)
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  refreshTokens RefreshToken[]
+  notifications Notification[]
+  owner         Owner?
+  tenant        Tenant?
+  documents     Document[]
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  userId    String
+  expiresAt DateTime
+  revoked   Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Owner {
+  id        String   @id @default(cuid())
+  userId    String?  @unique
+  name      String
+  email     String?
+  phone     String?
+  createdAt DateTime @default(now())
+
+  user       User?      @relation(fields: [userId], references: [id])
+  properties Property[]
+  contracts  Contract[]
+}
+
+model Tenant {
+  id        String   @id @default(cuid())
+  userId    String?  @unique
+  name      String
+  email     String?
+  phone     String?
+  createdAt DateTime @default(now())
+
+  user      User?      @relation(fields: [userId], references: [id])
+  contracts Contract[]
+}
+
+model Property {
+  id          String        @id @default(cuid())
+  name        String
+  type        PropertyType  @default(APARTMENT)
+  status      PropertyStatus @default(AVAILABLE)
+  description String?
+  address     String?
+  city        String?
+  country     String?       @default("Burkina Faso")
+  price       Float
+  area        Float?
+  rooms       Int?
+  bathrooms   Int?
+  images      Json          @default("[]")
+  ownerId     String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  owner     Owner?    @relation(fields: [ownerId], references: [id])
+  contracts Contract[]
+  documents Document[]
+}
+
+model Contract {
+  id          String         @id @default(cuid())
+  reference   String         @unique
+  propertyId  String
+  tenantId    String
+  ownerId     String?
+  startDate   DateTime
+  endDate     DateTime
+  rentAmount  Float
+  deposit     Float          @default(0)
+  status      ContractStatus @default(ACTIVE)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  property  Property @relation(fields: [propertyId], references: [id])
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  owner     Owner?   @relation(fields: [ownerId], references: [id])
+  rents     Rent[]
+  documents Document[]
+}
+
+model Rent {
+  id         String        @id @default(cuid())
+  contractId String
+  period     String
+  amount     Float
+  dueDate    DateTime
+  paidAt     DateTime?
+  status     PaymentStatus @default(PENDING)
+  createdAt  DateTime      @default(now())
+
+  contract Contract @relation(fields: [contractId], references: [id])
+  payment  Payment?
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  rentId      String        @unique
+  amount      Float
+  method      PaymentMethod @default(MOBILE_MONEY)
+  status      PaymentStatus @default(PENDING)
+  provider    String?
+  providerRef String?
+  createdAt   DateTime      @default(now())
+
+  rent Rent @relation(fields: [rentId], references: [id])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  type      NotificationType @default(INFO)
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Document {
+  id         String   @id @default(cuid())
+  name       String
+  path       String
+  mimeType   String
+  size       Int
+  propertyId String?
+  contractId String?
+  uploadedBy String?
+  createdAt  DateTime @default(now())
+
+  property Property? @relation(fields: [propertyId], references: [id])
+  contract Contract? @relation(fields: [contractId], references: [id])
+  user     User?     @relation(fields: [uploadedBy], references: [id])
+}
