@@ -20,7 +20,7 @@ class ApiClient {
 
   static final ApiClient instance = ApiClient._();
 
-  static const _timeout = Duration(seconds: 20);
+  static const _timeout = Duration(seconds: 45);
 
   String? _token;
 

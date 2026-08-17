@@ -129,7 +129,10 @@ export class AuthService {
 
     const refreshToken = await this.jwt.signAsync(
       payload,
-      { expiresIn: this.config.get('JWT_REFRESH_EXPIRES_IN') || '7d' },
+      {
+        expiresIn: this.config.get('JWT_REFRESH_EXPIRES_IN') || '7d',
+        jwtid: randomUUID(),
+      },
     );
 
     const expiresAt = new Date();
