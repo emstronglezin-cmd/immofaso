@@ -90,14 +90,14 @@ IMMOFASO_CONTEXT.md
 - [x] Intégration WhatsApp optionnelle
 - [x] Frontend PWA moderne (dashboard, navigation, formulaires, états de chargement/erreur)
 - [ ] Frontend mobile Flutter (APK Android release)
-- [ ] Déploiement Render (backend) + Vercel (PWA) + APK (mobile)
+- [x] Déploiement Render (backend) + Vercel (PWA) + APK (mobile)
 - [ ] Validation finale complète (17 points)
 
 ## État actuel de chaque partie
 
-- **backend** : complet — auth (register/login/guest/refresh/logout/me), users, properties, tenants, owners, contracts, rents, payments (LickPay optionnel), dashboard/stats, notifications, documents+uploads, storage abstrait, health `/api/v1/health`. `npm run build` OK, migrations appliquées (Postgres local), serveur démarre et API testée (health, guest, register, rôles).
-- **frontend-pwa** : complet — pages Home, Login, Register, Dashboard, Properties, PropertyDetail, Navbar, AuthContext, services API. `npm run build` OK.
-- **frontend-mobile** : projet Flutter 3.44.9 généré (template par défaut), `flutter analyze` OK. Écrans réels + API : **à faire**.
+- **backend** : complet — auth (register/login/guest/refresh/logout/me), users, properties, tenants, owners, contracts, rents, payments (LickPay optionnel), dashboard/stats, notifications, documents+uploads, storage abstrait, health `/api/v1/health`. Déployé sur Render : https://immofaso-backend.onrender.com (`/api/v1/health` → 200, migrations Prisma appliquées, guest/register/login vérifiés).
+- **frontend-pwa** : complet — pages Home, Login, Register, Dashboard, Properties, PropertyDetail, Navbar, AuthContext, services API. Déployé sur Vercel : https://frontend-pwa-umber.vercel.app (env `VITE_API_URL` → backend Render).
+- **frontend-mobile** : projet Flutter 3.44.9 généré (template par défaut), `flutter analyze` OK. Écrans réels + API : **à faire** (base URL configurée sur le backend Render).
 
 ## Conventions de code
 
