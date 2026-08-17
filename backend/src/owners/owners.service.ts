@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOwnerDto, UpdateOwnerDto } from './dto';
+import { assertDeletable } from '../common/utils/prisma-errors';
 
 @Injectable()
 export class OwnersService {
@@ -43,7 +44,14 @@ export class OwnersService {
 
   async remove(id: string) {
     await this.findOne(id);
-    await this.prisma.owner.delete({ where: { id } });
+    try {
+      await this.prisma.owner.delete({ where: { id } });
+    } catch (error) {
+      assertDeletable(
+        error,
+        'Impossible de supprimer : ce propriétaire est associé à des biens ou contrats',
+      );
+    }
     return { success: true };
   }
 }

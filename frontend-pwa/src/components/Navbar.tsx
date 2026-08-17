@@ -1,37 +1,59 @@
+import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { canAccessDashboard } from '../utils/roles';
 
 export function Navbar() {
   const { user, isGuest, logout } = useAuth();
   const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
 
   async function handleLogout() {
     await logout();
+    setOpen(false);
     navigate('/');
   }
 
+  function closeMenu() {
+    setOpen(false);
+  }
+
+  const showDashboard = !isGuest && user != null && canAccessDashboard(user);
+
   return (
     <nav className="navbar">
-      <Link to="/" className="brand">
+      <Link to="/" className="brand" onClick={closeMenu}>
         <span className="brand-mark">IM</span> IMMOFASO
       </Link>
-      <div className="nav-links">
-        <NavLink to="/" end>
+
+      <button
+        className="nav-burger"
+        onClick={() => setOpen((o) => !o)}
+        aria-label="Menu"
+      >
+        {open ? '✕' : '☰'}
+      </button>
+
+      <div className={`nav-links${open ? ' open' : ''}`}>
+        <NavLink to="/" end onClick={closeMenu}>
           Accueil
         </NavLink>
-        <NavLink to="/properties">Biens</NavLink>
-        {!isGuest && (
-          <NavLink to="/dashboard">Tableau de bord</NavLink>
+        <NavLink to="/properties" onClick={closeMenu}>
+          Biens
+        </NavLink>
+        {showDashboard && (
+          <NavLink to="/dashboard" onClick={closeMenu}>
+            Tableau de bord
+          </NavLink>
         )}
       </div>
-      <div className="nav-actions">
+
+      <div className={`nav-actions${open ? ' open' : ''}`}>
         {user ? (
           <>
             {isGuest && <span className="badge badge-guest">Invité</span>}
             {!isGuest && (
-              <span className="user-chip">
-                {user.firstName || user.email}
-              </span>
+              <span className="user-chip">{user.firstName || user.email}</span>
             )}
             <button className="btn btn-ghost" onClick={handleLogout}>
               Déconnexion
@@ -39,10 +61,18 @@ export function Navbar() {
           </>
         ) : (
           <>
-            <Link to="/login" className="btn btn-ghost">
+            <Link
+              to="/login"
+              className="btn btn-ghost"
+              onClick={closeMenu}
+            >
               Connexion
             </Link>
-            <Link to="/register" className="btn btn-primary">
+            <Link
+              to="/register"
+              className="btn btn-primary"
+              onClick={closeMenu}
+            >
               S'inscrire
             </Link>
           </>

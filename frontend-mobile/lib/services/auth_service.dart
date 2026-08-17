@@ -48,9 +48,16 @@ class AuthService extends ChangeNotifier {
         _user = fresh;
         await prefs.setString(_userKey, jsonEncode(fresh.toJson()));
       } catch (_) {
-        await _clearLocal(prefs);
-        ApiClient.instance.setToken(null);
-        _user = null;
+        // Un invité n'a pas de compte en base : /auth/me renvoie 401.
+        // On restaure alors la session invité mise en cache.
+        final cached = _user;
+        if (cached?.isGuest ?? false) {
+          _user = cached;
+        } else {
+          await _clearLocal(prefs);
+          ApiClient.instance.setToken(null);
+          _user = null;
+        }
       }
     }
     _initialized = true;

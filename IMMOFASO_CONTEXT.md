@@ -88,16 +88,16 @@ IMMOFASO_CONTEXT.md
 - [x] Endpoint santé /api/v1/health
 - [x] Intégration LeekPay optionnelle
 - [x] Intégration WhatsApp OTP optionnelle
-- [x] Frontend PWA moderne (dashboard, navigation, formulaires, états de chargement/erreur)
-- [ ] Frontend mobile Flutter (APK Android release)
+- [x] Frontend PWA moderne (dashboard, navigation, formulaires, états de chargement/erreur) — **refonte design premium terminée**
+- [x] Frontend mobile Flutter (design premium harmonisé avec le PWA, APK release construit ✅)
 - [x] Déploiement Render (backend) + Vercel (PWA) + APK (mobile)
 - [ ] Validation finale complète (17 points)
 
 ## État actuel de chaque partie
 
-- **backend** : complet — auth (register/login/guest/refresh/logout/me), users, properties, tenants, owners, contracts, rents, payments (LeekPay optionnel), dashboard/stats, notifications, documents+uploads, storage abstrait, health `/api/v1/health`. Déployé sur Render : https://immofaso-backend.onrender.com (`/api/v1/health` → 200, migrations Prisma appliquées, guest/register/login vérifiés).
-- **frontend-pwa** : complet — pages Home, Login, Register, Dashboard, Properties, PropertyDetail, Navbar, AuthContext, services API. Déployé sur Vercel : https://frontend-pwa-umber.vercel.app (env `VITE_API_URL` → backend Render).
-- **frontend-mobile** : projet Flutter 3.44.9 généré (template par défaut), `flutter analyze` OK. Écrans réels + API : **à faire** (base URL configurée sur le backend Render).
+- **backend** : complet — auth (register/login/guest/refresh/logout/me), users, properties, tenants, owners, contracts, rents, payments (LeekPay optionnel), dashboard/stats, notifications, documents+uploads, storage abstrait, health `/api/v1/health`. Déployé sur Render : https://immofaso-backend.onrender.com. **Vérifié en réel (2026-08-17)** : health→200, guest→201, register→201, me→200, properties→200 (liste publique, vide car pas de données), dashboard/stats→403 pour rôle TENANT (réservé ADMIN/MANAGER/OWNER).
+- **frontend-pwa** : **refonte design terminée** — pages Home, Login, Register, Dashboard, Properties, PropertyDetail, Navbar, PropertyCard, AuthContext, ToastContext, EmptyState, Skeleton, Spinner, services API. Design system moderne (teal `#0f766e`, gradient, glassmorphism, animations fadeUp/stagger, skeletons, toasts). URL API par défaut : https://immofaso-backend.onrender.com (fallback si `VITE_API_URL` absent). Build `npm run build` ✅ OK. Déployé sur Vercel : https://frontend-pwa-umber.vercel.app.
+- **frontend-mobile** : **design premium terminé et harmonisé avec le PWA** — palette teal `#0f766e` (`lib/theme.dart`), composants premium (cards, dégradés, glassmorphism, badges, FCFA), états chargement/squelette/erreur/vide élégants (`lib/widgets/state_widgets.dart`), animations (TweenAnimationBuilder sur Welcome/Splash), Welcome hero, login/register/properties/property_detail/profile. Auth (register/login/guest/logout) + propriétés branchés sur l'API Render. `flutter analyze` ✅ OK. **APK release construit** : `build/app/outputs/flutter-apk/app-release.apk` (48,4 MB).
 
 ## Conventions de code
 
@@ -185,7 +185,8 @@ Voir `.env.example` (racine) et `backend/.env.example`. Rôle principal :
 ## Problèmes rencontrés et solutions
 
 - **npm.ps1 bloqué par ExecutionPolicy (Windows)** : utiliser `npm.cmd` au lieu de `npm` dans PowerShell.
-- **TS2688 minimatch / TS2345 BadRequestException (storage)** : à corriger dans le backend (aligner les versions de types, typer correctement les throws). Voir historique backend.
+- **TS2688 minimatch / TS2345 BadRequestException (storage)** : **résolus** — le build backend passe (`npm run build` ✅, `npm run typecheck` ✅). Vérifier au prochain build complet.
+- **DELETE → 500 (FK P2003)** : supprimer une propriété/contrat/locataire lié renvoyait 500. Corrigé par `src/common/utils/prisma-errors.ts` (`assertDeletable`) : une entité liée renvoie maintenant **409 Conflict** avec message clair en français, une entité isolée → 200. Vérifié en réel (local) : propriété isolée→200, propriété liée→409, locataire lié→409.
 
 ## Décisions déjà prises
 
@@ -196,12 +197,45 @@ Voir `.env.example` (racine) et `backend/.env.example`. Rôle principal :
 
 ## Prochaines tâches
 
-1. Construire le backend NestJS complet + Prisma.
-2. Construire le frontend PWA.
-3. Finaliser le frontend mobile (écrans réels + API).
-4. Valider les 17 points de validation finale.
+> **REPRISE DE SESSION — point de reprise (2026-08-17)**
+> La refonte PWA est TERMINÉE et le build passe. L'API backend est validée en réel. Le design Flutter premium est terminé et l'APK release est construit. Reste : tests réels des parcours et validation finale.
+
+1. ✅ Refonte design PWA terminée (pages, composants, CSS, animations, toasts, skeletons).
+2. ✅ API backend validée en réel (health, guest, register, me, properties).
+3. ✅ **Design Flutter harmonisé avec le PWA** (palette teal `#0f766e`, theme premium `lib/theme.dart`, PropertyCard premium, Welcome hero, états chargement/erreur/vide `state_widgets.dart`, animations).
+4. ✅ Auth PWA vérifiée (register/login/guest/session) — code en place, build ✅.
+5. ✅ Récupération des biens PWA vérifiée (filtres, états) — code en place, build ✅.
+6. ✅ Auth mobile Flutter + mode invité (login/register/guest/logout, session persistée via shared_preferences).
+7. ⏳ Tests réels des parcours (accueil → biens → recherche → fiche → auth → dashboard) — à faire sur le déploiement.
+8. ✅ Build PWA production (tsc + vite ✅, dist/).
+9. ✅ Build APK Flutter release (`build/app/outputs/flutter-apk/app-release.apk`, 48,4 MB).
+10. ✅ Backend build + typecheck (résolution TS2688/TS2345).
+
+### Détail de l'étape 3 (design Flutter — TERMINÉE)
+
+- `lib/theme.dart` : palette PWA (primary `#0f766e`, surface claire `#f5f7fa`, `#115e59`, accent `#2dd4bf`, gold invité `#f59e0b`), thème premium (cards arrondies, boutons, inputs, NavigationBar, SnackBar).
+- `lib/widgets/property_card.dart` : design premium (cover dégradé si pas d'image, badges statut, prix FCFA, chambres/SdB).
+- `lib/screens/welcome_screen.dart` : hero + identité visuelle (gradient deep, glass, animations TweenAnimationBuilder).
+- `lib/widgets/state_widgets.dart` : SkeletonBox/SkeletonCard/ErrorState/EmptyState élégants.
+- Splash (`main.dart`) : écran de démarrage avec dégradé + logo.
+- Pas de surcharge : animations légères, analyse Flutter ✅.
+
+## Rappels backend vérifiés (2026-08-17)
+
+- `POST /api/v1/auth/guest` → 201, user `{role:GUEST, isGuest:true}`, refreshToken null.
+- `POST /api/v1/auth/register` → 201, rôle par défaut TENANT.
+- `POST /api/v1/auth/login` → 401 si compte inexistant (erreur attendue).
+- `GET /api/v1/auth/me` → 200 avec Bearer token.
+- `GET /api/v1/properties` → 200 public, format `{items:[], total:0}`.
+- `GET /api/v1/dashboard/stats` → 403 pour TENANT/GUEST (rôle ADMIN/MANAGER/OWNER requis). Le PWA gère déjà ce cas via EmptyState. Ne pas casser ce comportement.
+- `DELETE /api/v1/{properties|contracts|tenants}/:id` → 409 si entité liée (contrats/loyers/documents), 200 sinon. `DELETE /owners/:id` → 200 (relations optionnelles).
 
 ## État des tests et validations
 
-- Flutter : `flutter analyze` OK (template).
-- À faire : npm install backend, prisma generate, migrate, build, start, health check, build PWA, build APK.
+- PWA : `npm run build` ✅ OK (tsc + vite), ~235 kB JS gzip 78 kB. **Redéployé sur Vercel (2026-08-17)** : https://frontend-pwa-umber.vercel.app.
+- Flutter : `flutter analyze` ✅ OK (écrans réels + services API). **APK release construit** : `frontend-mobile/build/app/outputs/flutter-apk/app-release.apk` (48,4 MB).
+- Backend : `npm run build` ✅ OK, `npm run typecheck` ✅ OK (TS2688/TS2345 résolus).
+- **Tests réels API Render (2026-08-17)** : 36 tests passent (health, auth public register/login/guest/refresh/logout/me, validations 400/401/409, propriétés publiques + filtres, tenants/payments/notifications 200, gardes de rôle 403 dashboard/users/tenants/owners/contracts/documents, tokens invalides 401, LeekPay désactivé 400). PWA déployée vérifiée (chargement + backend Render référencé).
+- **Tests réels API locale (rôles élevés, compte ADMIN)** : dashboard/stats 200, users 200, propriétaire/locataire/propriété/contrat/loyer/paiement/notification CRUD 200/201, upload document multipart 201, validations 400, 404 propre, suppressions → 200 (isolé) / 409 (lié). 3 bugs DELETE 500 corrigés.
+- Compte ADMIN local `emstronglezin@gmail.com` / `Immofaso2026!` (base locale immofaso). Compte TENANT du même email créé sur Render.
+- À faire : redéploiement Render après push (auto-deploy), tests réels des parcours UI sur les déploiements.

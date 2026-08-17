@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
+import '../theme.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -19,24 +20,55 @@ class ProfileScreen extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               children: [
                 const SizedBox(height: 8),
-                CircleAvatar(
-                  radius: 40,
-                  backgroundColor: theme.colorScheme.primary,
-                  child: Text(
-                    user.initials,
-                    style: TextStyle(
-                      fontSize: 28,
-                      color: theme.colorScheme.onPrimary,
-                      fontWeight: FontWeight.bold,
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      width: 96,
+                      height: 96,
+                      decoration: BoxDecoration(
+                        gradient: kGrad,
+                        shape: BoxShape.circle,
+                        boxShadow: boxShadowCard,
+                      ),
+                      child: Center(
+                        child: Text(
+                          user.initials,
+                          style: const TextStyle(
+                            fontSize: 34,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                    if (user.isGuest)
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: const BoxDecoration(
+                            color: kAccentGold,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.visibility_outlined,
+                            size: 16,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 Text(
                   user.displayName,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w800,
+                    color: kInk,
+                    letterSpacing: -0.02,
                   ),
                 ),
                 if (user.email != null) ...[
@@ -45,14 +77,19 @@ class ProfileScreen extends StatelessWidget {
                     user.email!,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                      color: kMuted,
                     ),
                   ),
                 ],
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 Center(child: _roleBadge(theme, user.role, user.isGuest)),
                 const SizedBox(height: 24),
-                Card(
+                Container(
+                  decoration: BoxDecoration(
+                    color: kCard,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: kBorder),
+                  ),
                   child: Column(
                     children: [
                       _infoTile(
@@ -77,11 +114,40 @@ class ProfileScreen extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (user.isGuest) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: kPrimary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: kPrimary.withValues(alpha: 0.2)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.info_outline, color: kPrimary),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Mode invité : vous parcourez les biens sans compte.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: kPrimaryDark,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 FilledButton.tonalIcon(
                   onPressed: () async {
                     await AuthService.instance.logout();
                   },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: kDanger.withValues(alpha: 0.1),
+                    foregroundColor: kDanger,
+                  ),
                   icon: const Icon(Icons.logout),
                   label: const Text('Se déconnecter'),
                 ),
@@ -92,16 +158,18 @@ class ProfileScreen extends StatelessWidget {
 
   Widget _roleBadge(ThemeData theme, String role, bool isGuest) {
     final label = _roleLabel(role, isGuest);
+    final color = isGuest ? kAccentGold : kPrimary;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
-        color: theme.colorScheme.secondaryContainer,
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         label,
         style: theme.textTheme.labelMedium?.copyWith(
-          color: theme.colorScheme.onSecondaryContainer,
+          color: color,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
@@ -125,9 +193,15 @@ class ProfileScreen extends StatelessWidget {
 
   Widget _infoTile(ThemeData theme, IconData icon, String label, String value) {
     return ListTile(
-      leading: Icon(icon, color: theme.colorScheme.primary),
+      leading: Icon(icon, color: kPrimary),
       title: Text(label, style: theme.textTheme.labelMedium),
-      subtitle: Text(value, style: theme.textTheme.bodyLarge),
+      subtitle: Text(
+        value,
+        style: theme.textTheme.bodyLarge?.copyWith(
+          color: kInk,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 }

@@ -18,14 +18,33 @@ import {
 } from '../services/auth';
 import type { LoginPayload, RegisterPayload } from '../services/auth';
 
+const USER_KEY = 'immofaso_user';
+
+function readCachedUser(): User | null {
+  try {
+    const raw = localStorage.getItem(USER_KEY);
+    return raw ? (JSON.parse(raw) as User) : null;
+  } catch {
+    return null;
+  }
+}
+
+function cacheUser(user: User | null) {
+  if (user) {
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+  } else {
+    localStorage.removeItem(USER_KEY);
+  }
+}
+
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
   isAuthenticated: boolean;
   isGuest: boolean;
-  login: (payload: LoginPayload) => Promise<void>;
-  register: (payload: RegisterPayload) => Promise<void>;
-  continueAsGuest: () => Promise<void>;
+  login: (payload: LoginPayload) => Promise<User>;
+  register: (payload: RegisterPayload) => Promise<User>;
+  continueAsGuest: () => Promise<User>;
   logout: () => Promise<void>;
 }
 
@@ -42,8 +61,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           const current = await meApi();
           setUser(current);
+          cacheUser(current);
         } catch {
-          clearAuth();
+          // Un guest n'a pas de compte en base : /auth/me renvoie 401.
+          // On restaure alors la session invité mise en cache.
+          const cached = readCachedUser();
+          if (cached?.isGuest) {
+            setUser(cached);
+          } else {
+            clearAuth();
+            cacheUser(null);
+          }
         }
       }
       setLoading(false);
@@ -55,24 +83,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const res = await loginApi(payload);
     storeAuth(res);
     setUser(res.user);
+    cacheUser(res.user);
+    return res.user;
   }, []);
 
   const register = useCallback(async (payload: RegisterPayload) => {
     const res = await registerApi(payload);
     storeAuth(res);
     setUser(res.user);
+    cacheUser(res.user);
+    return res.user;
   }, []);
 
   const continueAsGuest = useCallback(async () => {
     const res = await guestApi();
     storeAuth(res);
     setUser(res.user);
+    cacheUser(res.user);
+    return res.user;
   }, []);
 
   const logout = useCallback(async () => {
-    await logoutApi();
-    clearAuth();
-    setUser(null);
+    try {
+      await logoutApi();
+    } finally {
+      clearAuth();
+      cacheUser(null);
+      setUser(null);
+    }
   }, []);
 
   const value = useMemo<AuthContextValue>(

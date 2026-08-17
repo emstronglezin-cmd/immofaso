@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 import 'screens/welcome_screen.dart';
 import 'services/auth_service.dart';
+import 'theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,45 +15,10 @@ class ImmofasoApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = ColorScheme.fromSeed(
-      seedColor: const Color(0xFF1F6E43),
-      brightness: Brightness.light,
-    );
     return MaterialApp(
       title: 'IMMOFASO',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: scheme,
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFF7F8F5),
-        appBarTheme: AppBarTheme(
-          backgroundColor: scheme.surface,
-          foregroundColor: scheme.onSurface,
-          elevation: 0,
-          centerTitle: false,
-          titleTextStyle: TextStyle(
-            color: scheme.onSurface,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          filled: true,
-          fillColor: scheme.surface,
-        ),
-        filledButtonTheme: FilledButtonThemeData(
-          style: FilledButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
-        ),
-      ),
+      theme: buildAppTheme(),
       home: const RootGate(),
     );
   }
@@ -101,26 +67,49 @@ class _SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.home_work, size: 72, color: scheme.primary),
-            const SizedBox(height: 12),
-            Text(
-              'IMMOFASO',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 4,
-                color: scheme.primary,
+      body: Container(
+        decoration: const BoxDecoration(gradient: kGradDeep),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.25),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.home_work,
+                  size: 56,
+                  color: Colors.white,
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            const CircularProgressIndicator(),
-          ],
+              const SizedBox(height: 20),
+              const Text(
+                'IMMOFASO',
+                style: TextStyle(
+                  fontSize: 30,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 5,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 28),
+              const SizedBox(
+                width: 26,
+                height: 26,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

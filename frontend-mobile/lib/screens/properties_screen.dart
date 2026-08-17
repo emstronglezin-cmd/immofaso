@@ -2,8 +2,20 @@ import 'package:flutter/material.dart';
 
 import '../models/property.dart';
 import '../services/properties_service.dart';
+import '../theme.dart';
 import '../widgets/property_card.dart';
+import '../widgets/state_widgets.dart';
 import 'property_detail_screen.dart';
+
+const _propertyTypes = <String, String>{
+  '': 'Tous les types',
+  'APARTMENT': 'Appartement',
+  'HOUSE': 'Maison',
+  'OFFICE': 'Bureau',
+  'COMMERCIAL': 'Local commercial',
+  'LAND': 'Terrain',
+  'OTHER': 'Autre',
+};
 
 class PropertiesScreen extends StatefulWidget {
   const PropertiesScreen({super.key});
@@ -17,6 +29,8 @@ class _PropertiesScreenState extends State<PropertiesScreen> {
   List<Property>? _items;
   String? _error;
   bool _loading = true;
+  String _type = '';
+  String _city = '';
 
   @override
   void initState() {
@@ -36,8 +50,14 @@ class _PropertiesScreenState extends State<PropertiesScreen> {
       _error = null;
     });
     try {
+      final search = _searchController.text.trim();
+      final query = <String, String>{
+        if (search.isNotEmpty) 'search': search,
+        if (_type.isNotEmpty) 'type': _type,
+        if (_city.isNotEmpty) 'city': _city,
+      };
       final result = await PropertiesService.instance.fetchProperties(
-        search: _searchController.text,
+        query: query,
       );
       if (mounted) {
         setState(() {
@@ -57,12 +77,23 @@ class _PropertiesScreenState extends State<PropertiesScreen> {
 
   Future<void> _refresh() => _load();
 
+  void _resetFilters() {
+    _searchController.clear();
+    setState(() {
+      _type = '';
+      _city = '';
+    });
+    _load();
+  }
+
+  bool get _hasFilters => _type.isNotEmpty || _city.isNotEmpty;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Biens'),
+        title: const Text('Nos biens'),
         actions: [
           IconButton(
             onPressed: _refresh,
@@ -93,73 +124,130 @@ class _PropertiesScreenState extends State<PropertiesScreen> {
               ),
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _filterDropdown(
+                    theme,
+                    value: _type,
+                    icon: Icons.apartment,
+                    label: _propertyTypes[_type]!,
+                    entries: _propertyTypes.entries.toList(),
+                    onChanged: (v) {
+                      setState(() => _type = v);
+                      _load();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _filterDropdown(
+                    theme,
+                    value: _city,
+                    icon: Icons.location_city_outlined,
+                    label: _city.isEmpty ? 'Ville' : _city,
+                    entries: const [
+                      MapEntry('', 'Toutes les villes'),
+                      MapEntry('Ouagadougou', 'Ouagadougou'),
+                      MapEntry('Bobo-Dioulasso', 'Bobo-Dioulasso'),
+                      MapEntry('Koudougou', 'Koudougou'),
+                      MapEntry('Banfora', 'Banfora'),
+                    ],
+                    onChanged: (v) {
+                      setState(() => _city = v);
+                      _load();
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (_hasFilters)
+            Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                child: TextButton.icon(
+                  onPressed: _resetFilters,
+                  icon: const Icon(Icons.filter_alt_off, size: 18),
+                  label: const Text('Réinitialiser'),
+                ),
+              ),
+            ),
           Expanded(child: _buildBody(theme)),
         ],
       ),
     );
   }
 
+  Widget _filterDropdown(
+    ThemeData theme, {
+    required String value,
+    required IconData icon,
+    required String label,
+    required List<MapEntry<String, String>> entries,
+    required ValueChanged<String> onChanged,
+  }) {
+    return DropdownButtonFormField<String>(
+      key: ValueKey('$label-$value'),
+      initialValue: value,
+      isExpanded: true,
+      decoration: InputDecoration(
+        prefixIcon: Icon(icon, size: 20, color: kPrimary),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      ),
+      items: entries
+          .map(
+            (e) => DropdownMenuItem(
+              value: e.key,
+              child: Text(
+                e.value,
+                style: theme.textTheme.bodyMedium,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          )
+          .toList(),
+      onChanged: (v) {
+        if (v != null) onChanged(v);
+      },
+    );
+  }
+
   Widget _buildBody(ThemeData theme) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.cloud_off, size: 48, color: theme.colorScheme.error),
-              const SizedBox(height: 12),
-              Text(
-                'Impossible de charger les biens',
-                style: theme.textTheme.titleMedium,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _error!,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              FilledButton.tonal(
-                onPressed: _refresh,
-                child: const Text('Réessayer'),
-              ),
-            ],
-          ),
+      return ListView.builder(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        itemCount: 4,
+        itemBuilder: (_, index) => const Padding(
+          padding: EdgeInsets.only(bottom: 12),
+          child: SkeletonCard(),
         ),
       );
     }
+    if (_error != null) {
+      return ErrorState(message: _error!, onRetry: _refresh);
+    }
     final items = _items ?? const <Property>[];
     if (items.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.home_work_outlined,
-              size: 48,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Aucun bien trouvé',
-              style: theme.textTheme.titleMedium,
-            ),
-          ],
-        ),
+      return EmptyState(
+        title: 'Aucun bien trouvé',
+        message: _hasFilters
+            ? 'Aucun bien ne correspond à vos filtres.'
+            : 'De nouveaux biens arrivent bientôt.',
+        icon: _hasFilters
+            ? Icons.filter_alt_off_outlined
+            : Icons.home_work_outlined,
       );
     }
     return RefreshIndicator(
       onRefresh: _refresh,
       child: ListView.builder(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         itemCount: items.length,
         itemBuilder: (context, index) {
           final property = items[index];
@@ -170,7 +258,8 @@ class _PropertiesScreenState extends State<PropertiesScreen> {
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute<void>(
-                    builder: (_) => PropertyDetailScreen(propertyId: property.id),
+                    builder: (_) =>
+                        PropertyDetailScreen(propertyId: property.id),
                   ),
                 );
               },

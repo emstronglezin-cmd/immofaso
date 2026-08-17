@@ -1,4 +1,10 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import {
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { Home } from './pages/Home';
 import { Login } from './pages/Login';
@@ -7,7 +13,16 @@ import { Dashboard } from './pages/Dashboard';
 import { Properties } from './pages/Properties';
 import { PropertyDetail } from './pages/PropertyDetail';
 import { useAuth } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
 import { Spinner } from './components/Spinner';
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
@@ -23,7 +38,8 @@ function Protected({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <>
+    <ToastProvider>
+      <ScrollToTop />
       <Navbar />
       <main>
         <Routes>
@@ -44,6 +60,6 @@ export default function App() {
         </Routes>
       </main>
       <footer className="footer">IMMOFASO © {new Date().getFullYear()}</footer>
-    </>
+    </ToastProvider>
   );
 }

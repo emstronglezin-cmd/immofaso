@@ -23,3 +23,15 @@ export function statusLabel(status: string): string {
   };
   return labels[status] || status;
 }
+
+export function typeIcon(type: string): string {
+  const icons: Record<string, string> = {
+    APARTMENT: '🏢',
+    HOUSE: '🏡',
+    OFFICE: '🏬',
+    COMMERCIAL: '🏪',
+    LAND: '🏞️',
+    OTHER: '🏠',
+  };
+  return icons[type] || '🏠';
+}

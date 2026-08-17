@@ -3,7 +3,7 @@ import type { AuthResponse } from '../models/types';
 
 const API_URL =
   (import.meta.env.VITE_API_URL as string | undefined) ||
-  'http://localhost:3000';
+  'https://immofaso-backend.onrender.com';
 
 export const api = axios.create({
   baseURL: `${API_URL}/api/v1`,

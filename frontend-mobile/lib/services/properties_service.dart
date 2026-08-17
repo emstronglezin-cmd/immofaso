@@ -6,12 +6,14 @@ class PropertiesService {
 
   static final PropertiesService instance = PropertiesService._();
 
-  Future<PropertyList> fetchProperties({String? search}) async {
+  Future<PropertyList> fetchProperties({String? search, Map<String, String>? query}) async {
+    final params = <String, String>{...?query};
+    if (search != null && search.trim().isNotEmpty) {
+      params['search'] = search.trim();
+    }
     final data = await ApiClient.instance.get(
       '/properties',
-      query: (search == null || search.trim().isEmpty)
-          ? null
-          : {'search': search.trim()},
+      query: params.isEmpty ? null : params,
     );
     return PropertyList.fromJson(data as Map<String, dynamic>);
   }

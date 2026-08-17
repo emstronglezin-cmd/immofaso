@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../models/property.dart';
 import '../services/properties_service.dart';
+import '../theme.dart';
+import '../widgets/state_widgets.dart';
 
 class PropertyDetailScreen extends StatefulWidget {
   const PropertyDetailScreen({super.key, required this.propertyId});
@@ -53,30 +55,9 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Détail du bien')),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const _DetailSkeleton()
           : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.cloud_off,
-                          size: 48,
-                          color: theme.colorScheme.error,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(_error!, textAlign: TextAlign.center),
-                        const SizedBox(height: 16),
-                        FilledButton.tonal(
-                          onPressed: _load,
-                          child: const Text('Réessayer'),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
+              ? ErrorState(message: _error!, onRetry: _load)
               : _buildContent(theme),
     );
   }
@@ -90,46 +71,46 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
         children: [
           _cover(theme, property),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: Text(
                         property.name,
                         style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w800,
+                          color: kInk,
+                          letterSpacing: -0.02,
                         ),
                       ),
                     ),
+                    _statusBadge(theme, property),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 if (property.city != null)
                   Row(
                     children: [
-                      Icon(
-                        Icons.location_on_outlined,
-                        size: 16,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
+                      const Icon(Icons.location_on_outlined, size: 16, color: kMuted),
                       const SizedBox(width: 4),
                       Text(
                         property.city!,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                          color: kMuted,
                         ),
                       ),
                     ],
                   ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
                 Text(
                   property.formattedPrice,
                   style: theme.textTheme.headlineMedium?.copyWith(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.bold,
+                    color: kPrimary,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -137,46 +118,63 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    _chip(theme, property.typeLabel),
-                    _chip(theme, property.statusLabel),
+                    _chip(theme, Icons.apartment, property.typeLabel),
                     if (property.rooms != null)
-                      _chip(theme, '${property.rooms} chambre(s)'),
+                      _chip(theme, Icons.king_bed_outlined, '${property.rooms} chambre(s)'),
                     if (property.bathrooms != null)
-                      _chip(theme, '${property.bathrooms} salle(s) de bain'),
+                      _chip(theme, Icons.bathtub_outlined, '${property.bathrooms} salle(s) de bain'),
                     if (property.area != null)
-                      _chip(theme, '${property.area!.toStringAsFixed(0)} m²'),
+                      _chip(theme, Icons.straighten, '${property.area!.toStringAsFixed(0)} m²'),
                   ],
                 ),
                 if (property.description != null) ...[
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 22),
                   Text(
                     'Description',
                     style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     property.description!,
-                    style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: kMuted,
+                      height: 1.5,
+                    ),
                   ),
                 ],
                 if (property.address != null) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    'Adresse : ${property.address}',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                  const SizedBox(height: 18),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.location_city_outlined, size: 18, color: kPrimary),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Adresse : ${property.address}',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: kMuted,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
                 if (property.ownerName != null) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    'Propriétaire : ${property.ownerName}',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      const Icon(Icons.person_outline, size: 18, color: kPrimary),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Propriétaire : ${property.ownerName}',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: kMuted,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ],
@@ -190,47 +188,105 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
   Widget _cover(ThemeData theme, Property property) {
     if (property.images.isEmpty) {
       return Container(
-        height: 220,
-        color: theme.colorScheme.primaryContainer,
-        child: Icon(
+        height: 240,
+        decoration: const BoxDecoration(gradient: kGradDeep),
+        child: const Icon(
           Icons.home_work_outlined,
-          size: 72,
-          color: theme.colorScheme.onPrimaryContainer,
+          size: 80,
+          color: Colors.white70,
         ),
       );
     }
     return SizedBox(
-      height: 220,
+      height: 240,
       child: Image.network(
         property.images.first,
         fit: BoxFit.cover,
         width: double.infinity,
         errorBuilder: (_, _, _) => Container(
-          height: 220,
-          color: theme.colorScheme.primaryContainer,
-          child: Icon(
+          height: 240,
+          decoration: const BoxDecoration(gradient: kGradDeep),
+          child: const Icon(
             Icons.home_work_outlined,
-            size: 72,
-            color: theme.colorScheme.onPrimaryContainer,
+            size: 80,
+            color: Colors.white70,
           ),
         ),
       ),
     );
   }
 
-  Widget _chip(ThemeData theme, String label) {
+  Widget _statusBadge(ThemeData theme, Property property) {
+    final isAvailable = property.status == 'AVAILABLE';
+    final color = isAvailable ? kSuccess : kMuted;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        label,
+        property.statusLabel,
         style: theme.textTheme.labelMedium?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
+          color: color,
+          fontWeight: FontWeight.w700,
         ),
       ),
+    );
+  }
+
+  Widget _chip(ThemeData theme, IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: kMuted),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: kMuted,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DetailSkeleton extends StatelessWidget {
+  const _DetailSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.only(bottom: 32),
+      children: const [
+        SkeletonBox(height: 240, radius: 0),
+        Padding(
+          padding: EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SkeletonBox(height: 26, width: 220),
+              SizedBox(height: 10),
+              SkeletonBox(height: 14, width: 140),
+              SizedBox(height: 18),
+              SkeletonBox(height: 30, width: 180),
+              SizedBox(height: 18),
+              SkeletonBox(height: 30, width: double.infinity),
+              SizedBox(height: 16),
+              SkeletonBox(height: 90, width: double.infinity),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

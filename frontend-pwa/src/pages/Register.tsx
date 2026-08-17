@@ -1,10 +1,21 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { Spinner } from '../components/Spinner';
+import { canAccessDashboard } from '../utils/roles';
+import type { AxiosError } from 'axios';
+
+function extractMessage(err: unknown, fallback: string): string {
+  const axiosErr = err as AxiosError<{ message?: string | string[] }>;
+  const raw = axiosErr?.response?.data?.message;
+  if (Array.isArray(raw)) return raw[0] ?? fallback;
+  return raw ?? fallback;
+}
 
 export function Register() {
   const { register } = useAuth();
+  const { success, error: toastError } = useToast();
   const navigate = useNavigate();
   const [form, setForm] = useState({
     firstName: '',
@@ -25,15 +36,23 @@ export function Register() {
     e.preventDefault();
     setError(null);
     if (form.password.length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caractères.');
+      const msg = 'Le mot de passe doit contenir au moins 6 caractères.';
+      setError(msg);
+      toastError(msg);
       return;
     }
     setBusy(true);
     try {
-      await register(form);
-      navigate('/dashboard');
-    } catch {
-      setError('Inscription impossible. Cet email est peut-être déjà utilisé.');
+      const u = await register(form);
+      success('Compte créé avec succès !');
+      navigate(canAccessDashboard(u) ? '/dashboard' : '/properties');
+    } catch (err) {
+      const msg = extractMessage(
+        err,
+        'Inscription impossible. Cet email est peut-être déjà utilisé.',
+      );
+      setError(msg);
+      toastError(msg);
     } finally {
       setBusy(false);
     }
@@ -41,8 +60,9 @@ export function Register() {
 
   return (
     <div className="auth-page">
-      <form className="card auth-card" onSubmit={handleSubmit}>
+      <form className="auth-card" onSubmit={handleSubmit}>
         <h1>Créer un compte</h1>
+        <p className="auth-subtitle">Rejoignez IMMOFASO en quelques secondes.</p>
         {error && <p className="error-text">{error}</p>}
         <div className="row">
           <label>
@@ -62,6 +82,7 @@ export function Register() {
             onChange={update('email')}
             required
             autoComplete="email"
+            placeholder="vous@exemple.com"
           />
         </label>
         <label>
@@ -71,6 +92,7 @@ export function Register() {
             value={form.phone}
             onChange={update('phone')}
             autoComplete="tel"
+            placeholder="+226 XX XX XX XX"
           />
         </label>
         <label>
@@ -82,12 +104,17 @@ export function Register() {
             required
             minLength={6}
             autoComplete="new-password"
+            placeholder="Au moins 6 caractères"
           />
         </label>
-        <button type="submit" className="btn btn-primary" disabled={busy}>
+        <button
+          type="submit"
+          className="btn btn-primary btn-block btn-lg"
+          disabled={busy}
+        >
           {busy ? <Spinner size={18} /> : "S'inscrire"}
         </button>
-        <p className="muted">
+        <p className="muted" style={{ textAlign: 'center', marginTop: 20 }}>
           Déjà inscrit ? <Link to="/login">Se connecter</Link>
         </p>
       </form>

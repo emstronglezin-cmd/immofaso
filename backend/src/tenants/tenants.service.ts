@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTenantDto, UpdateTenantDto } from './dto';
+import { assertDeletable } from '../common/utils/prisma-errors';
 
 @Injectable()
 export class TenantsService {
@@ -43,7 +44,14 @@ export class TenantsService {
 
   async remove(id: string) {
     await this.findOne(id);
-    await this.prisma.tenant.delete({ where: { id } });
+    try {
+      await this.prisma.tenant.delete({ where: { id } });
+    } catch (error) {
+      assertDeletable(
+        error,
+        'Impossible de supprimer : ce locataire est associé à des contrats',
+      );
+    }
     return { success: true };
   }
 }

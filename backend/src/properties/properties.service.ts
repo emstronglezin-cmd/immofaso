@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePropertyDto, UpdatePropertyDto } from './dto';
+import { assertDeletable } from '../common/utils/prisma-errors';
 
 export interface PropertyFilters {
   search?: string;
@@ -78,7 +79,14 @@ export class PropertiesService {
 
   async remove(id: string) {
     await this.findOne(id);
-    await this.prisma.property.delete({ where: { id } });
+    try {
+      await this.prisma.property.delete({ where: { id } });
+    } catch (error) {
+      assertDeletable(
+        error,
+        'Impossible de supprimer : ce bien est associé à des contrats ou documents',
+      );
+    }
     return { success: true };
   }
 }
