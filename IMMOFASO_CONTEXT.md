@@ -24,8 +24,8 @@ IMMOFASO est une plateforme moderne de gestion immobilière (Burkina Faso). Elle
 | Backend | NestJS, Prisma ORM, PostgreSQL, JWT, Passport |
 | Frontend PWA | Vite, React, TypeScript, PWA (vite-plugin-pwa) |
 | Frontend mobile | Flutter (Dart) |
-| Paiements | LickPay (optionnel) |
-| Messagerie | API WhatsApp (optionnelle) |
+| Paiements | LeekPay (optionnel) |
+| Messagerie | API WhatsApp OTP (optionnelle) |
 | Env | Node LTS (>=20, testé sur v24) |
 
 ## Structure des dossiers
@@ -50,7 +50,7 @@ IMMOFASO est une plateforme moderne de gestion immobilière (Burkina Faso). Elle
     notifications/
     documents/         # documents + uploads
     storage/           # système de stockage abstrait
-    integrations/      # lickpay (optionnel), whatsapp (optionnel)
+    integrations/      # leekpay (optionnel), whatsapp (optionnel)
     common/            # pipes, interceptors, utils
   .env.example
 /frontend-pwa
@@ -74,7 +74,7 @@ IMMOFASO_CONTEXT.md
 
 - Auth centralisée côté backend : inscription, login, JWT, refresh token, déconnexion, profil, guards, rôles.
 - Mode invité ("Continuer sans s'inscrire") : token invité éphémère, ne bloque pas les fonctionnalités de lecture/découverte.
-- Intégrations externes (LickPay, WhatsApp) **optionnelles** : si `*_ENABLED=false` ou clés absentes → fonctionnalité désactivée proprement, jamais d'erreur au build/démarrage.
+- Intégrations externes (LeekPay, WhatsApp OTP) **optionnelles** : si `*_ENABLED=false` ou clés absentes → fonctionnalité désactivée proprement, jamais d'erreur au build/démarrage.
 - Stockage abstrait : interface `StorageService` avec implémentation locale par défaut ; prêt pour un stockage externe (S3) plus tard. Un problème de stockage ne bloque pas le démarrage.
 - Health check : `GET /api/v1/health` → 200 quand l'API tourne.
 - Port : `process.env.PORT` (Render) avec fallback local 3000.
@@ -86,8 +86,8 @@ IMMOFASO_CONTEXT.md
 - [x] Backend NestJS complet (auth, users, biens, locataires, propriétaires, contrats, loyers, paiements, dashboard, notifications, documents, stats)
 - [x] Auth : inscription, connexion, JWT, refresh, déconnexion, profil, rôles, invité
 - [x] Endpoint santé /api/v1/health
-- [x] Intégration LickPay optionnelle
-- [x] Intégration WhatsApp optionnelle
+- [x] Intégration LeekPay optionnelle
+- [x] Intégration WhatsApp OTP optionnelle
 - [x] Frontend PWA moderne (dashboard, navigation, formulaires, états de chargement/erreur)
 - [ ] Frontend mobile Flutter (APK Android release)
 - [x] Déploiement Render (backend) + Vercel (PWA) + APK (mobile)
@@ -95,7 +95,7 @@ IMMOFASO_CONTEXT.md
 
 ## État actuel de chaque partie
 
-- **backend** : complet — auth (register/login/guest/refresh/logout/me), users, properties, tenants, owners, contracts, rents, payments (LickPay optionnel), dashboard/stats, notifications, documents+uploads, storage abstrait, health `/api/v1/health`. Déployé sur Render : https://immofaso-backend.onrender.com (`/api/v1/health` → 200, migrations Prisma appliquées, guest/register/login vérifiés).
+- **backend** : complet — auth (register/login/guest/refresh/logout/me), users, properties, tenants, owners, contracts, rents, payments (LeekPay optionnel), dashboard/stats, notifications, documents+uploads, storage abstrait, health `/api/v1/health`. Déployé sur Render : https://immofaso-backend.onrender.com (`/api/v1/health` → 200, migrations Prisma appliquées, guest/register/login vérifiés).
 - **frontend-pwa** : complet — pages Home, Login, Register, Dashboard, Properties, PropertyDetail, Navbar, AuthContext, services API. Déployé sur Vercel : https://frontend-pwa-umber.vercel.app (env `VITE_API_URL` → backend Render).
 - **frontend-mobile** : projet Flutter 3.44.9 généré (template par défaut), `flutter analyze` OK. Écrans réels + API : **à faire** (base URL configurée sur le backend Render).
 
@@ -165,15 +165,15 @@ Voir `.env.example` (racine) et `backend/.env.example`. Rôle principal :
 - `JWT_SECRET` : secret JWT (requis, défaut dev)
 - `JWT_REFRESH_SECRET` : secret refresh token
 - `PORT` : port serveur (Render fournit)
-- `LICKPAY_ENABLED`, `LICKPAY_API_KEY`, `LICKPAY_API_URL` : paiements (optionnel)
-- `WHATSAPP_ENABLED`, `WHATSAPP_API_TOKEN`, `WHATSAPP_API_URL` : WhatsApp (optionnel)
+- `LEEKPAY_ENABLED`, `LEEKPAY_PUBLIC_KEY`, `LEEKPAY_SECRET_KEY`, `LEEKPAY_API_URL` : paiements (optionnel)
+- `WHATSAPP_ENABLED`, `WHATSAPP_API_KEY`, `WHATSAPP_AUTH_KEY`, `WHATSAPP_API_URL` : WhatsApp OTP (optionnel)
 - `PUBLIC_URL` / `FRONTEND_URL` : CORS
 - `STORAGE_DRIVER` : `local` (défaut)
 
 ## Intégrations externes
 
-- **LickPay** : optionnelle. Désactivée par `LICKPAY_ENABLED=false`. Ne bloque jamais le démarrage.
-- **WhatsApp** : optionnelle. Désactivée par `WHATSAPP_ENABLED=false`. Ne bloque jamais le démarrage.
+- **LeekPay** : optionnelle. Désactivée par `LEEKPAY_ENABLED=false`. Ne bloque jamais le démarrage.
+- **WhatsApp OTP** : optionnelle. Désactivée par `WHATSAPP_ENABLED=false`. Ne bloque jamais le démarrage.
 
 ## Contraintes importantes
 

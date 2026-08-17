@@ -29,6 +29,22 @@ services:
         value: local
       - key: UPLOADS_DIR
         value: uploads
+      - key: LEEKPAY_ENABLED
+        value: "true"
+      - key: LEEKPAY_PUBLIC_KEY
+        sync: false
+      - key: LEEKPAY_SECRET_KEY
+        sync: false
+      - key: LEEKPAY_API_URL
+        value: https://leekpay.fr/api/v1
+      - key: WHATSAPP_ENABLED
+        value: "true"
+      - key: WHATSAPP_API_KEY
+        sync: false
+      - key: WHATSAPP_AUTH_KEY
+        sync: false
+      - key: WHATSAPP_API_URL
+        value: https://api-whatsappotp.total-innovation.net/v1/otp/send
 
 databases:
   - name: immofaso-db

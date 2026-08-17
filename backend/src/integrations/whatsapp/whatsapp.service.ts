@@ -11,18 +11,18 @@ export interface WhatsAppResult {
 export class WhatsAppService {
   private readonly logger = new Logger(WhatsAppService.name);
   private readonly enabled: boolean;
-  private readonly token: string | undefined;
+  private readonly apiKey: string | undefined;
+  private readonly authKey: string | undefined;
   private readonly apiUrl: string | undefined;
-  private readonly phoneId: string | undefined;
 
   constructor(private config: ConfigService) {
     this.enabled = this.config.get<string>('WHATSAPP_ENABLED') === 'true';
-    this.token = this.config.get<string>('WHATSAPP_API_TOKEN');
+    this.apiKey = this.config.get<string>('WHATSAPP_API_KEY');
+    this.authKey = this.config.get<string>('WHATSAPP_AUTH_KEY');
     this.apiUrl = this.config.get<string>('WHATSAPP_API_URL');
-    this.phoneId = this.config.get<string>('WHATSAPP_PHONE_ID');
-    if (this.enabled && !this.token) {
+    if (this.enabled && (!this.apiKey || !this.authKey)) {
       this.logger.warn(
-        'WHATSAPP_ENABLED=true mais WHATSAPP_API_TOKEN absent : WhatsApp désactivé',
+        'WHATSAPP_ENABLED=true mais clés WhatsApp OTP absentes : WhatsApp désactivé',
       );
       this.enabled = false;
     }
@@ -38,28 +38,26 @@ export class WhatsAppService {
     }
 
     try {
-      const url = `${this.apiUrl}/${this.phoneId}/messages`;
-      const response = await fetch(url, {
+      const response = await fetch(this.apiUrl!, {
         method: 'POST',
         headers: {
+          'X-API-Key': this.apiKey!,
+          'X-Auth-Key': this.authKey!,
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.token}`,
         },
-        body: JSON.stringify({
-          messaging_product: 'whatsapp',
-          to: phone,
-          type: 'text',
-          text: { body: text },
-        }),
+        body: JSON.stringify({ phone }),
       });
 
       if (!response.ok) {
-        throw new Error(`WhatsApp HTTP ${response.status}`);
+        throw new Error(`WhatsApp OTP HTTP ${response.status}`);
       }
 
+      this.logger.log(
+        `OTP WhatsApp envoyé au ${phone}${text ? ` (motif : ${text})` : ''}`,
+      );
       return { provider: 'whatsapp', sent: true, disabled: false };
     } catch (err) {
-      this.logger.error('Échec de l\'envoi WhatsApp', err);
+      this.logger.error('Échec de l\'envoi WhatsApp OTP', err);
       return { provider: 'whatsapp', sent: false, disabled: true };
     }
   }

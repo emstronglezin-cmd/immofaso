@@ -31,9 +31,9 @@ export class PaymentsController {
     return this.paymentsService.create(dto);
   }
 
-  @Post('licksim')
-  simulateLickPay() {
-    // Point d'entrée volontairement inerte tant que LickPay est désactivé.
-    throw new BadRequestException('LickPay n\'est pas activé');
+  @Post('leekpay-simulate')
+  simulateLeekPay() {
+    // Point d'entrée volontairement inerte tant que LeekPay est désactivé.
+    throw new BadRequestException('LeekPay n\'est pas activé');
   }
 }

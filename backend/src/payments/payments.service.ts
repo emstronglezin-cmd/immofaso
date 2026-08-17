@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { LickPayService } from '../integrations/lickpay/lickpay.service';
+import { LeekPayService } from '../integrations/leekpay/leekpay.service';
 import { WhatsAppService } from '../integrations/whatsapp/whatsapp.service';
 import { CreatePaymentDto } from './dto';
 import { PaymentStatus } from '@prisma/client';
@@ -9,7 +9,7 @@ import { PaymentStatus } from '@prisma/client';
 export class PaymentsService {
   constructor(
     private prisma: PrismaService,
-    private lickpay: LickPayService,
+    private leekpay: LeekPayService,
     private whatsapp: WhatsAppService,
   ) {}
 
@@ -44,8 +44,8 @@ export class PaymentsService {
     let provider = dto.provider;
     let providerRef = dto.providerRef;
 
-    if (method === 'LICKPAY' && this.lickpay.isEnabled()) {
-      const result = await this.lickpay.createPayment(
+    if (method === 'LEEKPAY' && this.leekpay.isEnabled()) {
+      const result = await this.leekpay.createPayment(
         dto.amount,
         `RENT-${rent.id.slice(0, 8)}`,
         {
