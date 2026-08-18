@@ -233,20 +233,20 @@ Voir `.env.example` (racine) et `backend/.env.example`. Rôle principal :
 
 ## Prochaines tâches
 
-> **REPRISE DE SESSION — point de reprise (2026-08-18)**
-> Le code est TERMINÉ côté backend (immeubles, dépenses, maintenance, paiements flexibles + reçus PDF, dashboard enrichi, properties enrichies + photos) et côté PWA (pages de gestion complètes + routes protégées + dashboard refait). Flutter a terminé l'amorçage : `management_service.dart`, modèles, écrans `manage_screen`/`manage_buildings_screen`/`manage_properties_screen`/`manage_tenants_screen`/`manage_payments_screen`, et onglet « Gestion » dans `home_screen.dart` (rôles ADMIN/MANAGER/OWNER) — `flutter analyze` ✅.
-> Prochaine étape : **déploiements** — commit/push GitHub → Render (backend, migration incluse) → Vercel (PWA) → tests réels en production, puis mise à jour finale de cette mémoire.
+> **REPRISE DE SESSION — point de reprise (2026-08-18, fin)**
+> ✅ TOUT EST TERMINÉ ET TESTÉ EN PRODUCTION : code (backend + PWA + Flutter) déployé, tests API de production 17/17 PASS, PWA redéployée sur Vercel, données de test nettoyées, IP allowlist DB restaurée.
+> Reste optionnel : rebuild APK Flutter release avec les écrans de gestion (non fait pour limiter la RAM), puis mise à jour finale de cette mémoire si nouvelle étape.
 
 1. ✅ Audit complet 2026-08-18 (ce qui existe, ce qui manque, règles de non-régression).
-2. ✅ Backend Prisma : Building, Expense, MaintenanceTicket, PropertyStatus.RESERVED, PaymentStatus.PARTIAL, ExpenseCategory, TicketPriority, TicketStatus, Property.buildingId/pieces/amenities/floor, Payment.rentId nullable + contractId, Rent.paidAmount. Migration `20260818130210_add_buildings_expenses_maintenance` créée + appliquée (local).
+2. ✅ Backend Prisma : Building, Expense, MaintenanceTicket, PropertyStatus.RESERVED, PaymentStatus.PARTIAL, ExpenseCategory, TicketPriority, TicketStatus, Property.buildingId/pieces/amenities/floor, Payment.rentId nullable + contractId, Rent.paidAmount. Migration `20260818130210_add_buildings_expenses_maintenance` créée + appliquée (local) puis **appliquée en prod par Render** (`prisma migrate deploy` dans buildCommand).
 3. ✅ Backend modules buildings/expenses/maintenance (CRUD + stats immeuble + catégories/priorités/statuts, `createdById` via @CurrentUser), enregistrés dans `app.module.ts`.
 4. ✅ Backend payments rework : `POST /payments` (contractId ou rentId) + waterfall sur loyers impayés, solde dettes/avances `GET /payments/balance/:contractId`, reçus PDF `GET /payments/:id/receipt` (pdfkit, `receipt.service.ts`).
 5. ✅ Backend dashboard : `GET /dashboard/overview` (aujourd'hui/mois/année, impayés par locataire, revenus/dépenses 12 mois, paiements par méthode) ; `stats` conservé.
 6. ✅ Backend properties : DTO enrichi (status, pieces, floor, amenities, buildingId), filtre buildingId, `POST/DELETE :id/images`.
 7. ✅ Backend vérifié : `npm run typecheck` + `npm run build` ✅.
-8. ✅ PWA : types/services (buildings, expenses, maintenance, tenants, contracts, payments + downloadReceipt, properties CRUD + photos + overview), composants UI (Modal, ConfirmDialog, Field, TextArea), CSS gestion, MgmtNav + MgmtLayout, pages `src/pages/manage/*` (Immeubles + détail, Biens + photos, Locataires + détail, Contrats + détail balance/encaissement/loyers, Paiements + reçu, Dépenses, Maintenance), Dashboard refait (stats + bar charts + impayés), routes `/manage/*` protégées (`ManagementRoute`). Build PWA ✅.
+8. ✅ PWA : types/services (buildings, expenses, maintenance, tenants, contracts, payments + downloadReceipt, properties CRUD + photos + overview), composants UI, CSS gestion, MgmtNav + MgmtLayout, pages `src/pages/manage/*` (Immeubles + détail, Biens + photos, Locataires + détail, Contrats + détail balance/encaissement/loyers, Paiements + reçu, Dépenses, Maintenance), Dashboard refait, routes `/manage/*` protégées (`ManagementRoute`). Build PWA ✅.
 9. ✅ Flutter : `api_client.dart` (patch/delete), `models/management.dart`, `services/management_service.dart`, écrans gestion (ManageScreen overview + Immeubles + Biens + Locataires + Paiements), onglet « Gestion » dans HomeScreen pour ADMIN/MANAGER/OWNER. `flutter analyze` ✅.
-10. ⏳ Déploiements : commit/push GitHub → Render (backend + migrate deploy) → Vercel (PWA) → tests réels en production → mise à jour finale de cette mémoire.
+10. ✅ **Déploiements + tests production (2026-08-18)** : commit `906f8a3` poussé → backend Render redéployé (nouveaux endpoints live, migration appliquée) ; compte prod `emstronglezin@gmail.com` promu **ADMIN** (via SQL direct, IP allowlist DB ajoutée puis retirée) ; **17/17 tests API prod PASS** (overview, building CRUD + stats, property building+RESERVED, tenant, contract, 2 rents, paiement waterfall → dette -50 000, 2e paiement → avance +200 000, reçu PDF en-tête `%PDF-`, expense ELECTRICITY, ticket NEW→IN_PROGRESS, garde 403 guest sur expenses) ; PWA redéployée sur Vercel (`vercel --prod` → https://frontend-pwa-umber.vercel.app, JS gzip 88 kB, routes /manage/buildings/maintenance/expenses/receipt/overview présentes) ; **données de test nettoyées en prod** (0 buildings/properties/contracts/payments/expenses/tickets restants).
 
 ### Détail de l'étape 3 (design Flutter — TERMINÉE)
 
@@ -274,5 +274,6 @@ Voir `.env.example` (racine) et `backend/.env.example`. Rôle principal :
 - Backend : `npm run build` ✅ OK, `npm run typecheck` ✅ OK (TS2688/TS2345 résolus), `pdfkit` installé.
 - **Tests réels API Render (2026-08-17)** : 36 tests passent (health, auth public register/login/guest/refresh/logout/me, validations 400/401/409, propriétés publiques + filtres, tenants/payments/notifications 200, gardes de rôle 403 dashboard/users/tenants/owners/contracts/documents, tokens invalides 401, LeekPay désactivé 400). PWA déployée vérifiée (chargement + backend Render référencé).
 - **Tests réels API locale (rôles élevés, compte ADMIN)** : dashboard/stats 200, users 200, propriétaire/locataire/propriété/contrat/loyer/paiement/notification CRUD 200/201, upload document multipart 201, validations 400, 404 propre, suppressions → 200 (isolé) / 409 (lié). 3 bugs DELETE 500 corrigés.
-- Compte ADMIN local `emstronglezin@gmail.com` / `Immofaso2026!` (base locale immofaso). Compte TENANT du même email créé sur Render.
-- À faire : push GitHub → redéploiement Render (auto-deploy) → redéploiement PWA Vercel → tests réels des parcours UI de gestion en production (immeubles, biens + photos, locataires, contrats, paiements + reçu PDF, dépenses, maintenance, dashboard).
+- Compte ADMIN local `emstronglezin@gmail.com` / `Immofaso2026!` (base locale immofaso). Compte **prod promu ADMIN** (même email) le 2026-08-18 — utilisé pour les tests de gestion en production.
+- **Déploiements 2026-08-18** : backend Render redéployé (commit `906f8a3`, migration appliquée, endpoints buildings/expenses/maintenance/overview/receipt live) ; PWA redéployée sur Vercel (https://frontend-pwa-umber.vercel.app) ; tests API prod 17/17 PASS ; données de test nettoyées ; IP allowlist DB restaurée (vide).
+- À faire (optionnel) : rebuild APK Flutter release avec les écrans de gestion (RAM).
