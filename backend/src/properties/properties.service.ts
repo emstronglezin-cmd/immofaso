@@ -1,5 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageService } from '../storage/storage.service';
 import { CreatePropertyDto, UpdatePropertyDto } from './dto';
 import { assertDeletable } from '../common/utils/prisma-errors';
 
@@ -8,13 +13,17 @@ export interface PropertyFilters {
   type?: string;
   status?: string;
   city?: string;
+  buildingId?: string;
   minPrice?: number;
   maxPrice?: number;
 }
 
 @Injectable()
 export class PropertiesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private storage: StorageService,
+  ) {}
 
   async findAll(filters: PropertyFilters) {
     const where: Record<string, unknown> = {};
@@ -29,6 +38,7 @@ export class PropertiesService {
     if (filters.type) where.type = filters.type;
     if (filters.status) where.status = filters.status;
     if (filters.city) where.city = { contains: filters.city, mode: 'insensitive' };
+    if (filters.buildingId) where.buildingId = filters.buildingId;
     if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
       where.price = {
         ...(filters.minPrice !== undefined ? { gte: filters.minPrice } : {}),
@@ -39,7 +49,7 @@ export class PropertiesService {
     const [items, total] = await this.prisma.$transaction([
       this.prisma.property.findMany({
         where,
-        include: { owner: true },
+        include: { owner: true, building: true },
         orderBy: { createdAt: 'desc' },
       }),
       this.prisma.property.count({ where }),
@@ -51,7 +61,12 @@ export class PropertiesService {
   async findOne(id: string) {
     const property = await this.prisma.property.findUnique({
       where: { id },
-      include: { owner: true, contracts: true, documents: true },
+      include: {
+        owner: true,
+        building: true,
+        contracts: true,
+        documents: true,
+      },
     });
     if (!property) {
       throw new NotFoundException('Bien introuvable');
@@ -60,20 +75,22 @@ export class PropertiesService {
   }
 
   async create(dto: CreatePropertyDto) {
-    const { images, ...rest } = dto;
+    const { images, amenities, ...rest } = dto;
     return this.prisma.property.create({
       data: {
         ...rest,
         images: images ? JSON.stringify(images) : '[]',
+        amenities: amenities ? JSON.stringify(amenities) : '[]',
       },
     });
   }
 
   async update(id: string, dto: UpdatePropertyDto) {
     await this.findOne(id);
-    const { images, ...rest } = dto;
+    const { images, amenities, ...rest } = dto;
     const data: Record<string, unknown> = { ...rest };
     if (images) data.images = JSON.stringify(images);
+    if (amenities) data.amenities = JSON.stringify(amenities);
     return this.prisma.property.update({ where: { id }, data });
   }
 
@@ -88,5 +105,42 @@ export class PropertiesService {
       );
     }
     return { success: true };
+  }
+
+  async addImage(id: string, file: Express.Multer.File) {
+    const property = await this.findOne(id);
+    if (!file) {
+      throw new BadRequestException('Aucune image reçue');
+    }
+    if (!file.mimetype.startsWith('image/')) {
+      throw new BadRequestException('Le fichier doit être une image');
+    }
+    const stored = await this.storage.save(
+      file.buffer,
+      file.originalname,
+      file.mimetype,
+    );
+    const images = Array.isArray(property.images) ? property.images : [];
+    const updated = [...images, stored.url];
+    return this.prisma.property.update({
+      where: { id },
+      data: { images: JSON.stringify(updated) },
+    });
+  }
+
+  async removeImage(id: string, url: string) {
+    const property = await this.findOne(id);
+    const images = Array.isArray(property.images) ? property.images : [];
+    const updated = images.filter((img: unknown) => img !== url);
+    if (typeof url === 'string' && url.includes('/file/')) {
+      const storedPath = decodeURIComponent(url.split('/file/')[1]);
+      if (storedPath) {
+        await this.storage.remove(storedPath);
+      }
+    }
+    return this.prisma.property.update({
+      where: { id },
+      data: { images: JSON.stringify(updated) },
+    });
   }
 }

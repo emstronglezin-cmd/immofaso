@@ -195,21 +195,58 @@ Voir `.env.example` (racine) et `backend/.env.example`. Rôle principal :
 - Intégrations externes optionnelles dès le premier déploiement.
 - Storage abstrait (local par défaut).
 
+## AUDIT COMPLET — 2026-08-18
+
+### Ce qui existe et fonctionne (NE PAS casser)
+- [x] Backend NestJS : auth (register/login/guest/refresh/logout/me, JWT, rôles), users, properties, tenants, owners, contracts, rents, payments, dashboard/stats, notifications, documents+uploads, storage abstrait (local), health `/api/v1/health`.
+- [x] Base PostgreSQL + Prisma (schéma : User, RefreshToken, Owner, Tenant, Property, Contract, Rent, Payment, Notification, Document).
+- [x] PWA Vite/React/TS/Tailwind : pages Home, Login, Register, Dashboard, Properties, PropertyDetail ; Navbar, PropertyCard, AuthContext, ToastContext, Skeleton, EmptyState, Spinner. Design teal `#0f766e` + glassmorphism + animations.
+- [x] Mobile Flutter : Welcome, Login, Register, Home, Properties, PropertyDetail, Profile ; theme premium `lib/theme.dart`, widgets d'état, services API. APK release 48,4 MB.
+- [x] Déploiements : Render (backend) + Vercel (PWA) + APK.
+- [x] DELETE → 409 via `assertDeletable` (prisma-errors.ts).
+
+### Ce qui MANQUE pour être un vrai SaaS de gestion
+- [x] Modèle **Immeuble (Building)** — regroupement des biens, étages, photos, stats (logements, occupation, revenus, impayés). **FAIT (module + stats + UI PWA/Flutter).**
+- [x] Modèle **Dépenses (Expense)** avec catégories + justificatif. **FAIT (module + UI PWA).**
+- [x] Modèle **Maintenance (MaintenanceTicket)** (plomberie/électricité/peinture/sécurité, priorité, statut). **FAIT (module + UI PWA).**
+- [x] **Lien bien → immeuble** (`Property.buildingId`). **FAIT.**
+- [x] **Statut RESERVED** pour les biens. **FAIT (enum PropertyStatus).**
+- [x] **Paiement flexible** : `Payment.rentId` nullable + `contractId`, avance, paiement partiel, paiement par contrat. **FAIT (waterfall + `Rent.paidAmount`).**
+- [x] **Suivi dettes/avances** : solde par contrat calculé backend. **FAIT (`GET /payments/balance/:contractId`).**
+- [x] **Reçus PDF** après paiement. **FAIT (`GET /payments/:id/receipt`, pdfkit).**
+- [x] **Dashboard enrichi** : stats aujourd'hui/mois/année, impayés, dépenses, travaux en cours. **FAIT (`GET /dashboard/overview` + UI PWA/Flutter).**
+- [x] **PWA : pages de gestion CRUD** (immeubles, biens, locataires, contrats, paiements, dépenses, maintenance). **FAIT (`src/pages/manage/*` + routes `/manage/*` protégées).**
+- [x] **Mobile : gestion** — service + écrans (dashboard, immeubles, biens, locataires, paiements) + onglet Gestion (rôles ADMIN/MANAGER/OWNER). **FAIT (flutter analyze ✅).**
+- [x] **Photo upload UI** : stockage local existait ; **UI PWA ajoutée** (upload/remplacement/suppression photos de biens).
+
+### Règles de non-régression pour la suite
+- NE PAS casser auth, sessions, routes existantes, DELETE 409, déploiements.
+- `GET /api/v1/dashboard/stats` → 403 pour TENANT/GUEST (garde existante, le PWA gère via EmptyState).
+- LeekPay/WhatsApp restent optionnels.
+- Stockage local par défaut conservé.
+
+### Décisions de conception retenues
+- Solde par contrat = `sum(paiements PAID) - sum(loyers due)` → négatif = dette, positif = avance. Calcul backend.
+- Enregistrement paiement : `POST /payments` accepte `contractId` (recommandé) ou `rentId` ; répartition "waterfall" sur les loyers impayés les plus anciens, reste → avance (crédit contrat).
+- Reçus : endpoint `GET /payments/:id/receipt` → PDF (lib `pdfkit`, à ajouter).
+- Immeubles/biens/dépenses/tickets : rôles ADMIN/MANAGER/OWNER (comme properties/tenants existants).
+
 ## Prochaines tâches
 
-> **REPRISE DE SESSION — point de reprise (2026-08-17)**
-> La refonte PWA est TERMINÉE et le build passe. L'API backend est validée en réel. Le design Flutter premium est terminé et l'APK release est construit. Reste : tests réels des parcours et validation finale.
+> **REPRISE DE SESSION — point de reprise (2026-08-18)**
+> Le code est TERMINÉ côté backend (immeubles, dépenses, maintenance, paiements flexibles + reçus PDF, dashboard enrichi, properties enrichies + photos) et côté PWA (pages de gestion complètes + routes protégées + dashboard refait). Flutter a terminé l'amorçage : `management_service.dart`, modèles, écrans `manage_screen`/`manage_buildings_screen`/`manage_properties_screen`/`manage_tenants_screen`/`manage_payments_screen`, et onglet « Gestion » dans `home_screen.dart` (rôles ADMIN/MANAGER/OWNER) — `flutter analyze` ✅.
+> Prochaine étape : **déploiements** — commit/push GitHub → Render (backend, migration incluse) → Vercel (PWA) → tests réels en production, puis mise à jour finale de cette mémoire.
 
-1. ✅ Refonte design PWA terminée (pages, composants, CSS, animations, toasts, skeletons).
-2. ✅ API backend validée en réel (health, guest, register, me, properties).
-3. ✅ **Design Flutter harmonisé avec le PWA** (palette teal `#0f766e`, theme premium `lib/theme.dart`, PropertyCard premium, Welcome hero, états chargement/erreur/vide `state_widgets.dart`, animations).
-4. ✅ Auth PWA vérifiée (register/login/guest/session) — code en place, build ✅.
-5. ✅ Récupération des biens PWA vérifiée (filtres, états) — code en place, build ✅.
-6. ✅ Auth mobile Flutter + mode invité (login/register/guest/logout, session persistée via shared_preferences).
-7. ⏳ Tests réels des parcours (accueil → biens → recherche → fiche → auth → dashboard) — à faire sur le déploiement.
-8. ✅ Build PWA production (tsc + vite ✅, dist/).
-9. ✅ Build APK Flutter release (`build/app/outputs/flutter-apk/app-release.apk`, 48,4 MB).
-10. ✅ Backend build + typecheck (résolution TS2688/TS2345).
+1. ✅ Audit complet 2026-08-18 (ce qui existe, ce qui manque, règles de non-régression).
+2. ✅ Backend Prisma : Building, Expense, MaintenanceTicket, PropertyStatus.RESERVED, PaymentStatus.PARTIAL, ExpenseCategory, TicketPriority, TicketStatus, Property.buildingId/pieces/amenities/floor, Payment.rentId nullable + contractId, Rent.paidAmount. Migration `20260818130210_add_buildings_expenses_maintenance` créée + appliquée (local).
+3. ✅ Backend modules buildings/expenses/maintenance (CRUD + stats immeuble + catégories/priorités/statuts, `createdById` via @CurrentUser), enregistrés dans `app.module.ts`.
+4. ✅ Backend payments rework : `POST /payments` (contractId ou rentId) + waterfall sur loyers impayés, solde dettes/avances `GET /payments/balance/:contractId`, reçus PDF `GET /payments/:id/receipt` (pdfkit, `receipt.service.ts`).
+5. ✅ Backend dashboard : `GET /dashboard/overview` (aujourd'hui/mois/année, impayés par locataire, revenus/dépenses 12 mois, paiements par méthode) ; `stats` conservé.
+6. ✅ Backend properties : DTO enrichi (status, pieces, floor, amenities, buildingId), filtre buildingId, `POST/DELETE :id/images`.
+7. ✅ Backend vérifié : `npm run typecheck` + `npm run build` ✅.
+8. ✅ PWA : types/services (buildings, expenses, maintenance, tenants, contracts, payments + downloadReceipt, properties CRUD + photos + overview), composants UI (Modal, ConfirmDialog, Field, TextArea), CSS gestion, MgmtNav + MgmtLayout, pages `src/pages/manage/*` (Immeubles + détail, Biens + photos, Locataires + détail, Contrats + détail balance/encaissement/loyers, Paiements + reçu, Dépenses, Maintenance), Dashboard refait (stats + bar charts + impayés), routes `/manage/*` protégées (`ManagementRoute`). Build PWA ✅.
+9. ✅ Flutter : `api_client.dart` (patch/delete), `models/management.dart`, `services/management_service.dart`, écrans gestion (ManageScreen overview + Immeubles + Biens + Locataires + Paiements), onglet « Gestion » dans HomeScreen pour ADMIN/MANAGER/OWNER. `flutter analyze` ✅.
+10. ⏳ Déploiements : commit/push GitHub → Render (backend + migrate deploy) → Vercel (PWA) → tests réels en production → mise à jour finale de cette mémoire.
 
 ### Détail de l'étape 3 (design Flutter — TERMINÉE)
 
@@ -232,10 +269,10 @@ Voir `.env.example` (racine) et `backend/.env.example`. Rôle principal :
 
 ## État des tests et validations
 
-- PWA : `npm run build` ✅ OK (tsc + vite), ~235 kB JS gzip 78 kB. **Redéployé sur Vercel (2026-08-17)** : https://frontend-pwa-umber.vercel.app.
-- Flutter : `flutter analyze` ✅ OK (écrans réels + services API). **APK release construit** : `frontend-mobile/build/app/outputs/flutter-apk/app-release.apk` (48,4 MB).
-- Backend : `npm run build` ✅ OK, `npm run typecheck` ✅ OK (TS2688/TS2345 résolus).
+- PWA : `npm run build` ✅ OK (tsc + vite) après ajout des pages de gestion ; ~235 kB JS gzip ~78 kB. **Redéployé sur Vercel (2026-08-17)** : https://frontend-pwa-umber.vercel.app.
+- Flutter : `flutter analyze` ✅ OK (écrans réels + services API + écrans de gestion). **APK release construit** : `frontend-mobile/build/app/outputs/flutter-apk/app-release.apk` (48,4 MB).
+- Backend : `npm run build` ✅ OK, `npm run typecheck` ✅ OK (TS2688/TS2345 résolus), `pdfkit` installé.
 - **Tests réels API Render (2026-08-17)** : 36 tests passent (health, auth public register/login/guest/refresh/logout/me, validations 400/401/409, propriétés publiques + filtres, tenants/payments/notifications 200, gardes de rôle 403 dashboard/users/tenants/owners/contracts/documents, tokens invalides 401, LeekPay désactivé 400). PWA déployée vérifiée (chargement + backend Render référencé).
 - **Tests réels API locale (rôles élevés, compte ADMIN)** : dashboard/stats 200, users 200, propriétaire/locataire/propriété/contrat/loyer/paiement/notification CRUD 200/201, upload document multipart 201, validations 400, 404 propre, suppressions → 200 (isolé) / 409 (lié). 3 bugs DELETE 500 corrigés.
 - Compte ADMIN local `emstronglezin@gmail.com` / `Immofaso2026!` (base locale immofaso). Compte TENANT du même email créé sur Render.
-- À faire : redéploiement Render après push (auto-deploy), tests réels des parcours UI sur les déploiements.
+- À faire : push GitHub → redéploiement Render (auto-deploy) → redéploiement PWA Vercel → tests réels des parcours UI de gestion en production (immeubles, biens + photos, locataires, contrats, paiements + reçu PDF, dépenses, maintenance, dashboard).

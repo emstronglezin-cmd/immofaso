@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { listProperties } from '../services/properties';
 import type { Property } from '../models/types';
 import { PropertyCard } from '../components/PropertyCard';
 import { SkeletonCard } from '../components/Skeleton';
 import { EmptyState } from '../components/EmptyState';
+import { useAuth } from '../context/AuthContext';
+import { canAccessDashboard } from '../utils/roles';
 
 const PROPERTY_TYPES = [
   { value: 'APARTMENT', label: 'Appartement' },
@@ -15,6 +18,8 @@ const PROPERTY_TYPES = [
 ];
 
 export function Properties() {
+  const { user, isGuest } = useAuth();
+  const showManage = !isGuest && canAccessDashboard(user);
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,11 +65,18 @@ export function Properties() {
           <span className="section-kicker">Catalogue</span>
           <h1>Nos biens</h1>
         </div>
-        {!loading && !error && (
-          <span className="muted">
-            {properties.length} bien{properties.length > 1 ? 's' : ''}
-          </span>
-        )}
+        <div className="row" style={{ alignItems: 'center', gap: 10 }}>
+          {showManage && (
+            <Link to="/manage/properties" className="btn btn-outline">
+              ⚙️ Gérer les biens
+            </Link>
+          )}
+          {!loading && !error && (
+            <span className="muted">
+              {properties.length} bien{properties.length > 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="filters animate-fade-in">

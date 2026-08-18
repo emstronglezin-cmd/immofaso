@@ -16,6 +16,9 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { DocumentsModule } from './documents/documents.module';
 import { StorageModule } from './storage/storage.module';
 import { IntegrationsModule } from './integrations/integrations.module';
+import { BuildingsModule } from './buildings/buildings.module';
+import { ExpensesModule } from './expenses/expenses.module';
+import { MaintenanceModule } from './maintenance/maintenance.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 
@@ -39,6 +42,9 @@ import { RolesGuard } from './auth/guards/roles.guard';
     DocumentsModule,
     StorageModule,
     IntegrationsModule,
+    BuildingsModule,
+    ExpensesModule,
+    MaintenanceModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

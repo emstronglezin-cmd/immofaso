@@ -29,8 +29,33 @@ enum PropertyType {
 enum PropertyStatus {
   AVAILABLE
   RENTED
+  RESERVED
   UNDER_MAINTENANCE
   SOLD
+}
+
+enum ExpenseCategory {
+  MAINTENANCE
+  ELECTRICITY
+  PLUMBING
+  RENOVATION
+  SECURITY
+  TAXES
+  OTHER
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TicketStatus {
+  NEW
+  IN_PROGRESS
+  WAITING
+  DONE
 }
 
 enum ContractStatus {
@@ -42,6 +67,7 @@ enum ContractStatus {
 
 enum PaymentStatus {
   PENDING
+  PARTIAL
   PAID
   FAILED
   REFUNDED
@@ -64,32 +90,33 @@ enum NotificationType {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  email     String    @unique
+  id        String   @id @default(cuid())
+  email     String   @unique
   password  String
   firstName String?
   lastName  String?
   phone     String?
-  role      Role      @default(TENANT)
-  isGuest   Boolean   @default(false)
-  active    Boolean   @default(true)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  role      Role     @default(TENANT)
+  isGuest   Boolean  @default(false)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   refreshTokens RefreshToken[]
   notifications Notification[]
   owner         Owner?
   tenant        Tenant?
   documents     Document[]
+  tickets       MaintenanceTicket[]
 }
 
 model RefreshToken {
-  id        String    @id @default(cuid())
-  token     String    @unique
+  id        String   @id @default(cuid())
+  token     String   @unique
   userId    String
   expiresAt DateTime
-  revoked   Boolean   @default(false)
-  createdAt DateTime  @default(now())
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -105,6 +132,7 @@ model Owner {
   user       User?      @relation(fields: [userId], references: [id])
   properties Property[]
   contracts  Contract[]
+  buildings  Building[]
 }
 
 model Tenant {
@@ -115,52 +143,61 @@ model Tenant {
   phone     String?
   createdAt DateTime @default(now())
 
-  user      User?      @relation(fields: [userId], references: [id])
+  user      User?               @relation(fields: [userId], references: [id])
   contracts Contract[]
+  tickets   MaintenanceTicket[]
 }
 
 model Property {
-  id          String        @id @default(cuid())
+  id          String         @id @default(cuid())
   name        String
-  type        PropertyType  @default(APARTMENT)
+  type        PropertyType   @default(APARTMENT)
   status      PropertyStatus @default(AVAILABLE)
   description String?
   address     String?
   city        String?
-  country     String?       @default("Burkina Faso")
+  country     String?        @default("Burkina Faso")
   price       Float
   area        Float?
   rooms       Int?
   bathrooms   Int?
-  images      Json          @default("[]")
+  pieces      Int?
+  floor       Int?
+  amenities   Json           @default("[]")
+  images      Json           @default("[]")
   ownerId     String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  owner     Owner?    @relation(fields: [ownerId], references: [id])
-  contracts Contract[]
-  documents Document[]
-}
-
-model Contract {
-  id          String         @id @default(cuid())
-  reference   String         @unique
-  propertyId  String
-  tenantId    String
-  ownerId     String?
-  startDate   DateTime
-  endDate     DateTime
-  rentAmount  Float
-  deposit     Float          @default(0)
-  status      ContractStatus @default(ACTIVE)
+  buildingId  String?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
-  property  Property @relation(fields: [propertyId], references: [id])
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
-  owner     Owner?   @relation(fields: [ownerId], references: [id])
+  owner     Owner?              @relation(fields: [ownerId], references: [id])
+  building  Building?           @relation(fields: [buildingId], references: [id])
+  contracts Contract[]
+  documents Document[]
+  expenses  Expense[]
+  tickets   MaintenanceTicket[]
+}
+
+model Contract {
+  id         String         @id @default(cuid())
+  reference  String         @unique
+  propertyId String
+  tenantId   String
+  ownerId    String?
+  startDate  DateTime
+  endDate    DateTime
+  rentAmount Float
+  deposit    Float          @default(0)
+  status     ContractStatus @default(ACTIVE)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  property  Property   @relation(fields: [propertyId], references: [id])
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  owner     Owner?     @relation(fields: [ownerId], references: [id])
   rents     Rent[]
   documents Document[]
+  payments  Payment[]
 }
 
 model Rent {
@@ -168,18 +205,20 @@ model Rent {
   contractId String
   period     String
   amount     Float
+  paidAmount Float         @default(0)
   dueDate    DateTime
   paidAt     DateTime?
   status     PaymentStatus @default(PENDING)
   createdAt  DateTime      @default(now())
 
-  contract Contract @relation(fields: [contractId], references: [id])
-  payment  Payment?
+  contract Contract  @relation(fields: [contractId], references: [id])
+  payments Payment[]
 }
 
 model Payment {
   id          String        @id @default(cuid())
-  rentId      String        @unique
+  rentId      String?
+  contractId  String?
   amount      Float
   method      PaymentMethod @default(MOBILE_MONEY)
   status      PaymentStatus @default(PENDING)
@@ -187,7 +226,8 @@ model Payment {
   providerRef String?
   createdAt   DateTime      @default(now())
 
-  rent Rent @relation(fields: [rentId], references: [id])
+  rent     Rent?     @relation(fields: [rentId], references: [id])
+  contract Contract? @relation(fields: [contractId], references: [id])
 }
 
 model Notification {
@@ -216,4 +256,58 @@ model Document {
   property Property? @relation(fields: [propertyId], references: [id])
   contract Contract? @relation(fields: [contractId], references: [id])
   user     User?     @relation(fields: [uploadedBy], references: [id])
+}
+
+model Building {
+  id          String   @id @default(cuid())
+  name        String
+  address     String?
+  city        String?
+  description String?
+  floors      Int?
+  photos      Json     @default("[]")
+  ownerId     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner      Owner?              @relation(fields: [ownerId], references: [id])
+  properties Property[]
+  expenses   Expense[]
+  tickets    MaintenanceTicket[]
+}
+
+model Expense {
+  id          String          @id @default(cuid())
+  title       String
+  category    ExpenseCategory @default(OTHER)
+  amount      Float
+  date        DateTime        @default(now())
+  description String?
+  receiptPath String?
+  buildingId  String?
+  propertyId  String?
+  createdAt   DateTime        @default(now())
+
+  building Building? @relation(fields: [buildingId], references: [id])
+  property Property? @relation(fields: [propertyId], references: [id])
+}
+
+model MaintenanceTicket {
+  id          String         @id @default(cuid())
+  title       String
+  description String?
+  priority    TicketPriority @default(MEDIUM)
+  status      TicketStatus   @default(NEW)
+  propertyId  String?
+  buildingId  String?
+  tenantId    String?
+  createdById String?
+  dueDate     DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  property  Property? @relation(fields: [propertyId], references: [id])
+  building  Building? @relation(fields: [buildingId], references: [id])
+  tenant    Tenant?   @relation(fields: [tenantId], references: [id])
+  createdBy User?     @relation(fields: [createdById], references: [id])
 }

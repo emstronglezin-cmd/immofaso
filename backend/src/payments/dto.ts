@@ -8,8 +8,13 @@ import {
 import { PaymentMethod } from '@prisma/client';
 
 export class CreatePaymentDto {
+  @IsOptional()
   @IsString()
-  rentId: string;
+  rentId?: string;
+
+  @IsOptional()
+  @IsString()
+  contractId?: string;
 
   @IsNumber()
   @Min(0)

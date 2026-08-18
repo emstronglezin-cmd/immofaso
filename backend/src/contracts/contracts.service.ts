@@ -26,7 +26,7 @@ export class ContractsService {
         property: true,
         tenant: true,
         owner: true,
-        rents: { include: { payment: true } },
+        rents: { include: { payments: true } },
         documents: true,
       },
     });

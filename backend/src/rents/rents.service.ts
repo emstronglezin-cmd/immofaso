@@ -16,7 +16,7 @@ export class RentsService {
   async findByContract(contractId: string) {
     return this.prisma.rent.findMany({
       where: { contractId },
-      include: { payment: true },
+      include: { payments: true },
       orderBy: { dueDate: 'asc' },
     });
   }

@@ -60,6 +60,20 @@ class ApiClient {
     return _decode(response);
   }
 
+  Future<dynamic> patch(String path, Map<String, dynamic> body) async {
+    final response = await http
+        .patch(_uri(path), headers: _headers, body: jsonEncode(body))
+        .timeout(_timeout);
+    return _decode(response);
+  }
+
+  Future<dynamic> delete(String path) async {
+    final response = await http
+        .delete(_uri(path), headers: _headers)
+        .timeout(_timeout);
+    return _decode(response);
+  }
+
   dynamic _decode(http.Response response) {
     final body = response.bodyBytes.isEmpty
         ? null

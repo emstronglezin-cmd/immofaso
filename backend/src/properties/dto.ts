@@ -17,6 +17,10 @@ export class CreatePropertyDto {
   type?: PropertyType;
 
   @IsOptional()
+  @IsEnum(PropertyStatus)
+  status?: PropertyStatus;
+
+  @IsOptional()
   @IsString()
   description?: string;
 
@@ -49,8 +53,23 @@ export class CreatePropertyDto {
   bathrooms?: number;
 
   @IsOptional()
+  @IsInt()
+  pieces?: number;
+
+  @IsOptional()
+  @IsInt()
+  floor?: number;
+
+  @IsOptional()
+  amenities?: unknown[];
+
+  @IsOptional()
   @IsString()
   ownerId?: string;
+
+  @IsOptional()
+  @IsString()
+  buildingId?: string;
 
   @IsOptional()
   images?: unknown[];
@@ -102,8 +121,23 @@ export class UpdatePropertyDto {
   bathrooms?: number;
 
   @IsOptional()
+  @IsInt()
+  pieces?: number;
+
+  @IsOptional()
+  @IsInt()
+  floor?: number;
+
+  @IsOptional()
+  amenities?: unknown[];
+
+  @IsOptional()
   @IsString()
   ownerId?: string;
+
+  @IsOptional()
+  @IsString()
+  buildingId?: string;
 
   @IsOptional()
   images?: unknown[];
