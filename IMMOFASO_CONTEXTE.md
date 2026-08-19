@@ -237,6 +237,29 @@ Voir `.env.example` (racine) et `backend/.env.example`. Rôle principal :
 > ✅ TOUT EST TERMINÉ ET TESTÉ EN PRODUCTION : code (backend + PWA + Flutter) déployé, tests API de production 17/17 PASS, PWA redéployée sur Vercel, données de test nettoyées, IP allowlist DB restaurée.
 > Reste optionnel : rebuild APK Flutter release avec les écrans de gestion (non fait pour limiter la RAM), puis mise à jour finale de cette mémoire si nouvelle étape.
 
+## REPRISE SESSION — 2026-08-19
+
+### Ce qui a été vérifié (AUDIT)
+- ✅ **PWA Vercel À JOUR** : bundle déployé `index-qNb5J6_F.js` = build local identique (pages gestion présentes : Immeubles, Locataires, Contrats, Paiements, Dépenses, Maintenance, Receipt, overview). **Le code déployé n'était pas en retard** : le problème était qu'**aucun lien de navigation** ne menait aux pages `/manage/*` → l'utilisateur ne voyait que Accueil/Biens/Tableau de bord et ne trouvait pas les pages de gestion ni le paiement.
+- ✅ **Backend Render À JOUR** : health 200, login ADMIN prod OK (`emstronglezin@gmail.com`), création + suppression immeuble de test OK (donnée nettoyée), gardes 401 sur /buildings, /expenses, /maintenance, /dashboard/overview sans auth.
+- ✅ **Backend local** : `npm run typecheck` + `npm run build` ✅ ; migrations 3/3 appliquées ("Database schema is up to date!").
+- ✅ **Mobile Flutter** : `flutter analyze --no-pub` ✅ (aucun problème, 84s). APK existant = **48,4 MB daté du 18/08** = **ne contient PAS encore les écrans de gestion** (à rebuild).
+
+### Correction effectuée (PWA)
+- **Bug** : pages de gestion inaccessibles depuis la navigation (aucun lien visible).
+- **Solution** : menu déroulant « Gestion ▾ » ajouté dans la Navbar pour les rôles ADMIN/MANAGER/OWNER (Immeubles, Biens, Locataires, Contrats, Paiements, Dépenses, Maintenance) + Tableau de bord conservé. Fichiers : `frontend-pwa/src/components/Navbar.tsx` + `frontend-pwa/src/index.css` (styles dropdown desktop + mobile).
+- **Build** : `npm run build` ✅ → nouveau bundle `index-Bxin6xr4.js` (gzip 88,47 kB).
+
+### Déploiements effectués (2026-08-19)
+- ✅ **Vercel** : `vercel --prod` → https://frontend-pwa-umber.vercel.app (nouveau bundle `index-Bxin6xr4.js` live, vérifié HTTP 200).
+- ✅ **GitHub** : commit `afc61c4` poussé sur `main` (« PWA: menu Gestion dans la navbar + RAM mobile build ») + `frontend-mobile/android/gradle.properties` (limite RAM Gradle `-Xmx1536m` pour machine modeste).
+- ✅ **Backend Render** : aucun changement backend → pas de redéploiement ; health 200 vérifié.
+
+## PROCHAINE ÉTAPE
+- ⏳ **Rebuild APK Flutter release** avec les écrans de gestion — **EN ATTENTE D'AVIS UTILISATEUR** (le user a demandé de donner son avis avant le build APK).
+  - Avant le build : vérifier endpoints/URL backend de prod, puis `flutter build apk --release` (limiter la RAM : `gradle.properties` déjà ajusté `-Xmx1536m`, workers=1).
+  - APK sortie : `frontend-mobile/build/app/outputs/flutter-apk/app-release.apk`.
+
 1. ✅ Audit complet 2026-08-18 (ce qui existe, ce qui manque, règles de non-régression).
 2. ✅ Backend Prisma : Building, Expense, MaintenanceTicket, PropertyStatus.RESERVED, PaymentStatus.PARTIAL, ExpenseCategory, TicketPriority, TicketStatus, Property.buildingId/pieces/amenities/floor, Payment.rentId nullable + contractId, Rent.paidAmount. Migration `20260818130210_add_buildings_expenses_maintenance` créée + appliquée (local) puis **appliquée en prod par Render** (`prisma migrate deploy` dans buildCommand).
 3. ✅ Backend modules buildings/expenses/maintenance (CRUD + stats immeuble + catégories/priorités/statuts, `createdById` via @CurrentUser), enregistrés dans `app.module.ts`.
