@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   NotFoundException,
   Param,
@@ -81,6 +82,12 @@ export class PaymentsController {
   @Post()
   create(@Body() dto: CreatePaymentDto, @CurrentUser() user: AuthUser) {
     return this.paymentsService.create(dto, user?.id);
+  }
+
+  @Delete(':id')
+  @Roles(Role.ADMIN, Role.MANAGER, Role.OWNER)
+  remove(@Param('id') id: string) {
+    return this.paymentsService.remove(id);
   }
 
   @Post('leekpay-simulate')

@@ -189,6 +189,33 @@ export class PaymentsService {
     return remaining;
   }
 
+  async remove(id: string) {
+    const payment = await this.prisma.payment.findUnique({ where: { id } });
+    if (!payment) {
+      throw new NotFoundException('Paiement introuvable');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.payment.delete({ where: { id } });
+
+      if (payment.contractId) {
+        await tx.rent.updateMany({
+          where: { contractId: payment.contractId },
+          data: { paidAmount: 0, status: 'PENDING', paidAt: null },
+        });
+        const remaining = await tx.payment.findMany({
+          where: { contractId: payment.contractId, status: 'PAID' },
+          orderBy: { createdAt: 'asc' },
+        });
+        for (const p of remaining) {
+          await this.applyToRents(tx, payment.contractId, p.amount);
+        }
+      }
+    });
+
+    return { success: true };
+  }
+
   async getContractBalance(contractId: string) {
     const contract = await this.prisma.contract.findUnique({
       where: { id: contractId },
