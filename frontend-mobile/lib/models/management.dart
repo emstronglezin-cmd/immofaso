@@ -283,6 +283,47 @@ class DashboardOverview {
   }
 }
 
+class RentModel {
+  final String id;
+  final double amount;
+  final double paidAmount;
+  final String status;
+  final String dueDate;
+  final String? tenantName;
+  final String? propertyName;
+  final String? contractReference;
+  final String createdAt;
+
+  const RentModel({
+    required this.id,
+    required this.amount,
+    required this.paidAmount,
+    required this.status,
+    required this.dueDate,
+    this.tenantName,
+    this.propertyName,
+    this.contractReference,
+    required this.createdAt,
+  });
+
+  factory RentModel.fromJson(Map<String, dynamic> json) {
+    final contract = json['contract'] as Map<String, dynamic>?;
+    final tenant = contract?['tenant'] as Map<String, dynamic>?;
+    final property = contract?['property'] as Map<String, dynamic>?;
+    return RentModel(
+      id: json['id'] as String? ?? '',
+      amount: (json['amount'] as num?)?.toDouble() ?? 0,
+      paidAmount: (json['paidAmount'] as num?)?.toDouble() ?? 0,
+      status: json['status'] as String? ?? 'PENDING',
+      dueDate: json['dueDate'] as String? ?? '',
+      tenantName: tenant?['name'] as String?,
+      propertyName: property?['name'] as String?,
+      contractReference: contract?['reference'] as String?,
+      createdAt: json['createdAt'] as String? ?? '',
+    );
+  }
+}
+
 String formatFcfa(num value) {
   final rounded = value.round();
   final digits = rounded.abs().toString();

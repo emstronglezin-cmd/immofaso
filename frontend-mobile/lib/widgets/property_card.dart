@@ -119,7 +119,7 @@ class PropertyCard extends StatelessWidget {
         property.images.first,
         fit: BoxFit.cover,
         width: double.infinity,
-        errorBuilder: (_, _, _) => _coverFallback(),
+        errorBuilder: (context, error, stackTrace) => _coverFallback(),
       ),
     );
   }

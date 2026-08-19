@@ -1,4 +1,5 @@
 import '../models/management.dart';
+import '../models/notification_model.dart';
 import 'api_client.dart';
 
 class ManagementService {
@@ -135,5 +136,43 @@ class ManagementService {
 
   Future<void> deleteTicket(String id) async {
     await ApiClient.instance.delete('/maintenance/$id');
+  }
+
+  // ── Loyers ─────────────────────────────────────────────────────────────
+  Future<List<RentModel>> fetchRents() async {
+    final data = await ApiClient.instance.get('/rents');
+    final items = data is Map<String, dynamic>
+        ? (data['items'] as List<dynamic>? ?? [])
+        : (data as List<dynamic>? ?? []);
+    return items
+        .whereType<Map<String, dynamic>>()
+        .map(RentModel.fromJson)
+        .toList();
+  }
+
+  Future<void> createRent(Map<String, dynamic> body) async {
+    await ApiClient.instance.post('/rents', body);
+  }
+
+  // ── Notifications ───────────────────────────────────────────────────────
+  Future<List<NotificationModel>> fetchNotifications() async {
+    final data = await ApiClient.instance.get('/notifications');
+    final items = data is Map<String, dynamic>
+        ? (data['items'] as List<dynamic>? ?? [])
+        : (data as List<dynamic>? ?? []);
+    return items
+        .whereType<Map<String, dynamic>>()
+        .map(NotificationModel.fromJson)
+        .toList();
+  }
+
+  Future<void> markAllNotificationsRead() async {
+    await ApiClient.instance.post('/notifications/read-all');
+  }
+
+  // ── Solde crédit/dette par contrat ─────────────────────────────────────
+  Future<Map<String, dynamic>> fetchContractBalance(String contractId) async {
+    final data = await ApiClient.instance.get('/payments/balance/$contractId');
+    return data as Map<String, dynamic>? ?? {};
   }
 }

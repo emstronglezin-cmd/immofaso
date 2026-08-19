@@ -10,7 +10,10 @@ import 'manage_expenses_screen.dart';
 import 'manage_maintenance_screen.dart';
 import 'manage_payments_screen.dart';
 import 'manage_properties_screen.dart';
+import 'manage_rents_screen.dart';
 import 'manage_tenants_screen.dart';
+import 'notifications_screen.dart';
+import 'rapports_screen.dart';
 
 class ManageScreen extends StatefulWidget {
   const ManageScreen({super.key});
@@ -148,6 +151,35 @@ class _ManageScreenState extends State<ManageScreen> {
           label: 'Maintenance',
           subtitle: 'Tickets et interventions',
           onTap: () => _push(const ManageMaintenanceScreen()),
+        ),
+        _moduleTile(
+          theme,
+          icon: Icons.home_filled,
+          label: 'Loyers',
+          subtitle: 'Échéances et impayés',
+          onTap: () => _push(const ManageRentsScreen()),
+        ),
+        const Divider(height: 24),
+        Text(
+          'Analyses',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 12),
+        _moduleTile(
+          theme,
+          icon: Icons.bar_chart,
+          label: 'Rapports',
+          subtitle: 'Statistiques et performance',
+          onTap: () => _push(const RapportsScreen()),
+        ),
+        _moduleTile(
+          theme,
+          icon: Icons.notifications_outlined,
+          label: 'Notifications',
+          subtitle: 'Alertes et rappels',
+          onTap: () => _push(const NotificationsScreen()),
         ),
       ],
     );

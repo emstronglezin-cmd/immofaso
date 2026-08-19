@@ -300,3 +300,52 @@ Voir `.env.example` (racine) et `backend/.env.example`. Rôle principal :
 - Compte ADMIN local `emstronglezin@gmail.com` / `Immofaso2026!` (base locale immofaso). Compte **prod promu ADMIN** (même email) le 2026-08-18 — utilisé pour les tests de gestion en production.
 - **Déploiements 2026-08-18** : backend Render redéployé (commit `906f8a3`, migration appliquée, endpoints buildings/expenses/maintenance/overview/receipt live) ; PWA redéployée sur Vercel (https://frontend-pwa-umber.vercel.app) ; tests API prod 17/17 PASS ; données de test nettoyées ; IP allowlist DB restaurée (vide).
 - À faire (optionnel) : rebuild APK Flutter release avec les écrans de gestion (RAM).
+## REPRISE SESSION — AUDIT FINAL (2026-08-19 — session courante)
+
+### Audit réalisé
+- ✅ Dépôt cloné depuis `emstronglezin-cmd/immofaso`
+- ✅ IMMOFASO_CONTEXTE.md lu intégralement
+- ✅ Toute la structure analysée (Flutter, PWA, backend)
+- ✅ Backend Render vérifié : health 200, login ADMIN OK, tous les endpoints OK
+
+### Bugs Flutter corrigés (5 erreurs `flutter analyze`)
+1. **`manage_maintenance_screen.dart` ligne 158** : syntaxe `'propertyId': ?propertyId` (null-aware-elements, non supporté en Dart 3.4) → remplacé par `if (propertyId != null) body['propertyId'] = propertyId`
+2. **`property_detail_screen.dart`** : `errorBuilder: (_, _, _)` → `(context, error, stackTrace)` (3 underscores dupliqués interdits)
+3. **`property_card.dart`** : idem `errorBuilder: (_, _, _)` → `(context, error, stackTrace)`
+- `flutter analyze` → **No issues found** ✅
+
+### Nouveaux fichiers Flutter ajoutés
+- `lib/screens/manage_rents_screen.dart` — écran Loyers (onglets : En attente / Payés / Impayés, génération loyer par contrat, connecté à `/rents`)
+- `lib/screens/rapports_screen.dart` — écran Rapports & Statistiques (revenus/dépenses/bénéfice mensuel, performance annuelle, taux d'occupation visuel, graphique barres 12 mois, infos du jour)
+- `lib/screens/notifications_screen.dart` — écran Notifications (icônes par type, badge non-lu, marquer tout lu)
+- `lib/models/notification_model.dart` — modèle NotificationModel
+
+### Fichiers Flutter modifiés
+- `lib/models/management.dart` : ajout classe `RentModel` (montant, paidAmount, statut, dueDate, tenant, property, contract)
+- `lib/services/management_service.dart` : ajout `fetchRents()`, `createRent()`, `fetchNotifications()`, `markAllNotificationsRead()`, `fetchContractBalance(contractId)`
+- `lib/screens/manage_screen.dart` : ajout modules Loyers, Rapports, Notifications dans le menu Gestion
+- `pubspec.yaml` : sdk downgrade `^3.4.0` (compat Flutter 3.35.4/Dart 3.9.2), http `1.5.0`, shared_preferences `2.5.3`, flutter_lints `5.0.0`
+- `android/settings.gradle.kts` : AGP `8.7.3`, Kotlin `2.1.20` (compatible Flutter 3.35.4)
+- `android/app/build.gradle.kts` : correction `kotlinOptions { jvmTarget = "17" }` (remplacement du bloc kotlin{} AGP9 incompatible)
+- `android/gradle.properties` : `newDsl=false`, `builtInKotlin=false`
+
+### Tests backend réalisés (production Render)
+- ✅ `GET /api/v1/health` → 200
+- ✅ `POST /api/v1/auth/login` (ADMIN) → 200, token JWT
+- ✅ `GET /api/v1/dashboard/overview` → 200, structure today/month/year
+- ✅ `GET /api/v1/buildings` → 200, liste vide
+- ✅ `GET /api/v1/rents` → 200, liste vide
+- ✅ `GET /api/v1/notifications` → 200, liste vide
+- ✅ `GET /api/v1/expenses` → 200, `{items:[], total:0}`
+- ✅ `GET /api/v1/maintenance` → 200, `{items:[], total:0}`
+
+### Build APK
+- ✅ **APK release construit avec succès** : `build/app/outputs/flutter-apk/app-release.apk` (48 MB)
+- Commande utilisée : `flutter build apk --release`
+- Configuration finale : AGP 8.7.3 + Kotlin 2.1.20 + `kotlinOptions { jvmTarget = "17" }`
+
+### Prochaines tâches restantes (non réalisées dans cette session)
+- ⏳ **PWA** : tester navigation complète, vérifier que toutes les pages /manage/* s'affichent correctement après connexion ADMIN
+- ⏳ **APK installation test** : installer l'APK sur téléphone physique ou émulateur, vérifier inscription/connexion/dashboard
+- ⏳ **Redéploiement Vercel PWA** (si modifications PWA nécessaires)
+- ⏳ **Crédit locataire** : l'endpoint `/payments/balance/:contractId` existe côté backend et service Flutter — ajouter un écran dédié CréditLocataire qui affiche le solde pour chaque contrat

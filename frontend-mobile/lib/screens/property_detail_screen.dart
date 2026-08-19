@@ -203,7 +203,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
         property.images.first,
         fit: BoxFit.cover,
         width: double.infinity,
-        errorBuilder: (_, _, _) => Container(
+        errorBuilder: (context, error, stackTrace) => Container(
           height: 240,
           decoration: const BoxDecoration(gradient: kGradDeep),
           child: const Icon(

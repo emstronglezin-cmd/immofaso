@@ -150,13 +150,16 @@ class _ManageMaintenanceScreenState extends State<ManageMaintenanceScreen> {
       return;
     }
     try {
-      await ManagementService.instance.createTicket({
+      final ticketBody = <String, dynamic>{
         'title': title,
         'priority': priority,
         if (descriptionController.text.trim().isNotEmpty)
           'description': descriptionController.text.trim(),
-        'propertyId': ?propertyId,
-      });
+      };
+      if (propertyId != null) {
+        ticketBody['propertyId'] = propertyId;
+      }
+      await ManagementService.instance.createTicket(ticketBody);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Ticket créé.')),
