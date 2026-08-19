@@ -5,23 +5,25 @@ import '../services/management_service.dart';
 import '../theme.dart';
 import '../widgets/state_widgets.dart';
 
-const _methods = <String, String>{
-  'CASH': 'Espèces',
-  'MOBILE_MONEY': 'Mobile Money',
-  'BANK_TRANSFER': 'Virement',
+const _categories = <String, String>{
+  'MAINTENANCE': 'Maintenance',
+  'ELECTRICITY': 'Électricité',
+  'PLUMBING': 'Plomberie',
+  'RENOVATION': 'Travaux',
+  'SECURITY': 'Sécurité',
+  'TAXES': 'Taxes',
   'OTHER': 'Autre',
 };
 
-class ManagePaymentsScreen extends StatefulWidget {
-  const ManagePaymentsScreen({super.key});
+class ManageExpensesScreen extends StatefulWidget {
+  const ManageExpensesScreen({super.key});
 
   @override
-  State<ManagePaymentsScreen> createState() => _ManagePaymentsScreenState();
+  State<ManageExpensesScreen> createState() => _ManageExpensesScreenState();
 }
 
-class _ManagePaymentsScreenState extends State<ManagePaymentsScreen> {
-  List<PaymentModel> _items = const [];
-  List<dynamic> _contracts = const [];
+class _ManageExpensesScreenState extends State<ManageExpensesScreen> {
+  List<ExpenseModel> _items = const [];
   bool _loading = true;
   String? _error;
 
@@ -37,13 +39,10 @@ class _ManagePaymentsScreenState extends State<ManagePaymentsScreen> {
       _error = null;
     });
     try {
-      final payments =
-          await ManagementService.instance.fetchPayments();
-      final contracts = await ManagementService.instance.fetchContracts();
+      final items = await ManagementService.instance.fetchExpenses();
       if (mounted) {
         setState(() {
-          _items = payments;
-          _contracts = contracts;
+          _items = items;
           _loading = false;
         });
       }
@@ -57,65 +56,56 @@ class _ManagePaymentsScreenState extends State<ManagePaymentsScreen> {
     }
   }
 
-  Future<void> _register() async {
-    if (_contracts.isEmpty) {
-      _showError('Créez d\'abord un contrat.');
-      return;
-    }
+  Future<void> _create() async {
+    final titleController = TextEditingController();
     final amountController = TextEditingController();
-    String contractId = (_contracts.first as Map<String, dynamic>)['id'] as String;
-    String method = 'MOBILE_MONEY';
+    final descriptionController = TextEditingController();
+    String category = 'OTHER';
+    DateTime date = DateTime.now();
 
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Enregistrer un paiement'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<String>(
-                initialValue: contractId,
-                decoration: const InputDecoration(labelText: 'Contrat'),
-                items: _contracts
-                    .map((c) => c as Map<String, dynamic>)
-                    .map(
-                      (c) => DropdownMenuItem(
-                        value: c['id'] as String,
-                        child: Text(
-                          '${c['reference'] ?? ''} — '
-                          '${(c['tenant'] as Map<String, dynamic>?)?['name'] ?? ''}',
+          title: const Text('Nouvelle dépense'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(labelText: 'Titre *'),
+                  autofocus: true,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: amountController,
+                  decoration:
+                      const InputDecoration(labelText: 'Montant (FCFA) *'),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: category,
+                  decoration: const InputDecoration(labelText: 'Catégorie'),
+                  items: _categories.entries
+                      .map(
+                        (e) => DropdownMenuItem(
+                          value: e.key,
+                          child: Text(e.value),
                         ),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (v) =>
-                    setDialogState(() => contractId = v ?? contractId),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: amountController,
-                decoration:
-                    const InputDecoration(labelText: 'Montant (FCFA) *'),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: method,
-                decoration:
-                    const InputDecoration(labelText: 'Mode de paiement'),
-                items: _methods.entries
-                    .map(
-                      (e) => DropdownMenuItem(
-                        value: e.key,
-                        child: Text(e.value),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (v) =>
-                    setDialogState(() => method = v ?? method),
-              ),
-            ],
+                      )
+                      .toList(),
+                  onChanged: (v) => setDialogState(() => category = v ?? category),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descriptionController,
+                  decoration: const InputDecoration(labelText: 'Description'),
+                  maxLines: 2,
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -124,27 +114,31 @@ class _ManagePaymentsScreenState extends State<ManagePaymentsScreen> {
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Enregistrer'),
+              child: const Text('Créer'),
             ),
           ],
         ),
       ),
     );
     if (ok != true) return;
+    final title = titleController.text.trim();
     final amount = double.tryParse(amountController.text.trim()) ?? 0;
-    if (amount <= 0) {
-      _showError('Le montant est requis.');
+    if (title.isEmpty || amount <= 0) {
+      _showError('Titre et montant sont requis.');
       return;
     }
     try {
-      await ManagementService.instance.registerPayment({
-        'contractId': contractId,
+      await ManagementService.instance.createExpense({
+        'title': title,
         'amount': amount,
-        'method': method,
+        'category': category,
+        'date': date.toIso8601String(),
+        if (descriptionController.text.trim().isNotEmpty)
+          'description': descriptionController.text.trim(),
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Paiement enregistré.')),
+          const SnackBar(content: Text('Dépense enregistrée.')),
         );
       }
       _load();
@@ -153,14 +147,12 @@ class _ManagePaymentsScreenState extends State<ManagePaymentsScreen> {
     }
   }
 
-  Future<void> _delete(PaymentModel payment) async {
+  Future<void> _delete(ExpenseModel expense) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Supprimer le paiement'),
-        content: Text(
-          'Supprimer le paiement de ${formatFcfa(payment.amount)} ?',
-        ),
+        title: const Text('Supprimer la dépense'),
+        content: Text('Supprimer « ${expense.title} » ?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -176,10 +168,10 @@ class _ManagePaymentsScreenState extends State<ManagePaymentsScreen> {
     );
     if (ok != true) return;
     try {
-      await ManagementService.instance.deletePayment(payment.id);
+      await ManagementService.instance.deleteExpense(expense.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Paiement supprimé.')),
+          const SnackBar(content: Text('Dépense supprimée.')),
         );
       }
       _load();
@@ -200,7 +192,7 @@ class _ManagePaymentsScreenState extends State<ManagePaymentsScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Paiements'),
+        title: const Text('Dépenses'),
         actions: [
           IconButton(
             onPressed: _load,
@@ -210,9 +202,9 @@ class _ManagePaymentsScreenState extends State<ManagePaymentsScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _register,
-        icon: const Icon(Icons.payments_outlined),
-        label: const Text('Encaisser'),
+        onPressed: _create,
+        icon: const Icon(Icons.add),
+        label: const Text('Dépense'),
       ),
       body: _buildBody(theme),
     );
@@ -236,12 +228,12 @@ class _ManagePaymentsScreenState extends State<ManagePaymentsScreen> {
     }
     if (_items.isEmpty) {
       return const EmptyState(
-        title: 'Aucun paiement',
-        message: 'Enregistrez un encaissement.',
-        icon: Icons.payments_outlined,
+        title: 'Aucune dépense',
+        message: 'Enregistrez vos dépenses.',
+        icon: Icons.receipt_long_outlined,
       );
     }
-    final total = _items.fold<double>(0, (s, p) => s + p.amount);
+    final total = _items.fold<double>(0, (s, e) => s + e.amount);
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
@@ -250,14 +242,14 @@ class _ManagePaymentsScreenState extends State<ManagePaymentsScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: kGrad,
+              gradient: kGradDeep,
               borderRadius: BorderRadius.circular(18),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Total encaissé',
+                  'Total des dépenses',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: Colors.white70,
                   ),
@@ -276,7 +268,7 @@ class _ManagePaymentsScreenState extends State<ManagePaymentsScreen> {
           ),
           const SizedBox(height: 16),
           ..._items.map(
-            (p) => Card(
+            (e) => Card(
               margin: const EdgeInsets.only(bottom: 12),
               child: ListTile(
                 contentPadding:
@@ -285,33 +277,36 @@ class _ManagePaymentsScreenState extends State<ManagePaymentsScreen> {
                   width: 46,
                   height: 46,
                   decoration: BoxDecoration(
-                    color: kSuccess.withValues(alpha: 0.12),
+                    color: kDanger.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(Icons.check_circle_outline,
-                      color: kSuccess),
+                  child: const Icon(Icons.receipt_long_outlined,
+                      color: kDanger),
                 ),
                 title: Text(
-                  formatFcfa(p.amount),
+                  e.title,
                   style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: kSuccess,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 subtitle: Text(
-                  '${p.tenantName ?? '—'} · ${p.propertyName ?? '—'}\n'
-                  '${_methods[p.method] ?? p.method}',
+                  '${_categories[e.category] ?? e.category} · '
+                  '${e.propertyName ?? e.buildingName ?? '—'}\n'
+                  '${e.date.length >= 10 ? e.date.substring(0, 10) : ''}',
                   style: theme.textTheme.bodySmall?.copyWith(color: kMuted),
                 ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      p.createdAt.length >= 10 ? p.createdAt.substring(0, 10) : '',
-                      style: theme.textTheme.bodySmall?.copyWith(color: kMuted),
+                      formatFcfa(e.amount),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: kDanger,
+                      ),
                     ),
                     IconButton(
-                      onPressed: () => _delete(p),
+                      onPressed: () => _delete(e),
                       icon: const Icon(Icons.delete_outline, color: kDanger),
                       tooltip: 'Supprimer',
                     ),

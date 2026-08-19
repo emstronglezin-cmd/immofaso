@@ -5,6 +5,9 @@ import '../services/management_service.dart';
 import '../theme.dart';
 import '../widgets/state_widgets.dart';
 import 'manage_buildings_screen.dart';
+import 'manage_contracts_screen.dart';
+import 'manage_expenses_screen.dart';
+import 'manage_maintenance_screen.dart';
 import 'manage_payments_screen.dart';
 import 'manage_properties_screen.dart';
 import 'manage_tenants_screen.dart';
@@ -124,6 +127,27 @@ class _ManageScreenState extends State<ManageScreen> {
           label: 'Paiements',
           subtitle: 'Encaisser et suivre',
           onTap: () => _push(const ManagePaymentsScreen()),
+        ),
+        _moduleTile(
+          theme,
+          icon: Icons.description_outlined,
+          label: 'Contrats',
+          subtitle: 'Lier locataires et biens',
+          onTap: () => _push(const ManageContractsScreen()),
+        ),
+        _moduleTile(
+          theme,
+          icon: Icons.receipt_long_outlined,
+          label: 'Dépenses',
+          subtitle: 'Enregistrer les charges',
+          onTap: () => _push(const ManageExpensesScreen()),
+        ),
+        _moduleTile(
+          theme,
+          icon: Icons.build_outlined,
+          label: 'Maintenance',
+          subtitle: 'Tickets et interventions',
+          onTap: () => _push(const ManageMaintenanceScreen()),
         ),
       ],
     );

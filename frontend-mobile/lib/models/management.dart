@@ -98,6 +98,139 @@ class PaymentModel {
   }
 }
 
+class ContractModel {
+  final String id;
+  final String reference;
+  final String? tenantId;
+  final String? propertyId;
+  final String startDate;
+  final String endDate;
+  final double rentAmount;
+  final double deposit;
+  final String status;
+  final String? tenantName;
+  final String? propertyName;
+  final String createdAt;
+
+  const ContractModel({
+    required this.id,
+    required this.reference,
+    this.tenantId,
+    this.propertyId,
+    required this.startDate,
+    required this.endDate,
+    required this.rentAmount,
+    this.deposit = 0,
+    required this.status,
+    this.tenantName,
+    this.propertyName,
+    required this.createdAt,
+  });
+
+  factory ContractModel.fromJson(Map<String, dynamic> json) {
+    final tenant = json['tenant'] as Map<String, dynamic>?;
+    final property = json['property'] as Map<String, dynamic>?;
+    return ContractModel(
+      id: json['id'] as String? ?? '',
+      reference: json['reference'] as String? ?? '',
+      tenantId: json['tenantId'] as String?,
+      propertyId: json['propertyId'] as String?,
+      startDate: json['startDate'] as String? ?? '',
+      endDate: json['endDate'] as String? ?? '',
+      rentAmount: (json['rentAmount'] as num?)?.toDouble() ?? 0,
+      deposit: (json['deposit'] as num?)?.toDouble() ?? 0,
+      status: json['status'] as String? ?? 'ACTIVE',
+      tenantName: tenant?['name'] as String?,
+      propertyName: property?['name'] as String?,
+      createdAt: json['createdAt'] as String? ?? '',
+    );
+  }
+}
+
+class ExpenseModel {
+  final String id;
+  final String title;
+  final String category;
+  final double amount;
+  final String date;
+  final String? description;
+  final String? buildingName;
+  final String? propertyName;
+  final String createdAt;
+
+  const ExpenseModel({
+    required this.id,
+    required this.title,
+    required this.category,
+    required this.amount,
+    required this.date,
+    this.description,
+    this.buildingName,
+    this.propertyName,
+    required this.createdAt,
+  });
+
+  factory ExpenseModel.fromJson(Map<String, dynamic> json) {
+    final building = json['building'] as Map<String, dynamic>?;
+    final property = json['property'] as Map<String, dynamic>?;
+    return ExpenseModel(
+      id: json['id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      category: json['category'] as String? ?? 'OTHER',
+      amount: (json['amount'] as num?)?.toDouble() ?? 0,
+      date: json['date'] as String? ?? '',
+      description: json['description'] as String?,
+      buildingName: building?['name'] as String?,
+      propertyName: property?['name'] as String?,
+      createdAt: json['createdAt'] as String? ?? '',
+    );
+  }
+}
+
+class MaintenanceTicketModel {
+  final String id;
+  final String title;
+  final String? description;
+  final String priority;
+  final String status;
+  final String? propertyName;
+  final String? buildingName;
+  final String? tenantName;
+  final String? dueDate;
+  final String createdAt;
+
+  const MaintenanceTicketModel({
+    required this.id,
+    required this.title,
+    this.description,
+    required this.priority,
+    required this.status,
+    this.propertyName,
+    this.buildingName,
+    this.tenantName,
+    this.dueDate,
+    required this.createdAt,
+  });
+
+  factory MaintenanceTicketModel.fromJson(Map<String, dynamic> json) {
+    final property = json['property'] as Map<String, dynamic>?;
+    final building = json['building'] as Map<String, dynamic>?;
+    final tenant = json['tenant'] as Map<String, dynamic>?;
+    return MaintenanceTicketModel(
+      id: json['id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      description: json['description'] as String?,
+      priority: json['priority'] as String? ?? 'MEDIUM',
+      status: json['status'] as String? ?? 'NEW',
+      propertyName: property?['name'] as String?,
+      buildingName: building?['name'] as String?,
+      tenantName: tenant?['name'] as String?,
+      dueDate: json['dueDate'] as String?,
+      createdAt: json['createdAt'] as String? ?? '',
+    );
+  }
+}
+
 class DashboardOverview {
   final double todayCollected;
   final double todayExpected;

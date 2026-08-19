@@ -74,8 +74,66 @@ class ManagementService {
     return ApiClient.instance.post('/payments', body);
   }
 
+  Future<void> deletePayment(String id) async {
+    await ApiClient.instance.delete('/payments/$id');
+  }
+
   Future<List<dynamic>> fetchContracts() async {
     final data = await ApiClient.instance.get('/contracts');
     return data as List<dynamic>? ?? const [];
+  }
+
+  Future<List<ContractModel>> fetchContractModels() async {
+    final data = await ApiClient.instance.get('/contracts');
+    return (data as List<dynamic>)
+        .whereType<Map<String, dynamic>>()
+        .map(ContractModel.fromJson)
+        .toList();
+  }
+
+  Future<void> createContract(Map<String, dynamic> body) async {
+    await ApiClient.instance.post('/contracts', body);
+  }
+
+  Future<void> deleteContract(String id) async {
+    await ApiClient.instance.delete('/contracts/$id');
+  }
+
+  Future<List<ExpenseModel>> fetchExpenses() async {
+    final data = await ApiClient.instance.get('/expenses');
+    return ((data as Map<String, dynamic>)['items'] as List<dynamic>?)
+            ?.whereType<Map<String, dynamic>>()
+            .map(ExpenseModel.fromJson)
+            .toList() ??
+        const [];
+  }
+
+  Future<void> createExpense(Map<String, dynamic> body) async {
+    await ApiClient.instance.post('/expenses', body);
+  }
+
+  Future<void> deleteExpense(String id) async {
+    await ApiClient.instance.delete('/expenses/$id');
+  }
+
+  Future<List<MaintenanceTicketModel>> fetchTickets() async {
+    final data = await ApiClient.instance.get('/maintenance');
+    return ((data as Map<String, dynamic>)['items'] as List<dynamic>?)
+            ?.whereType<Map<String, dynamic>>()
+            .map(MaintenanceTicketModel.fromJson)
+            .toList() ??
+        const [];
+  }
+
+  Future<void> createTicket(Map<String, dynamic> body) async {
+    await ApiClient.instance.post('/maintenance', body);
+  }
+
+  Future<void> updateTicket(String id, Map<String, dynamic> body) async {
+    await ApiClient.instance.patch('/maintenance/$id', body);
+  }
+
+  Future<void> deleteTicket(String id) async {
+    await ApiClient.instance.delete('/maintenance/$id');
   }
 }
